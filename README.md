@@ -34,6 +34,10 @@ Persistem no `localStorage` entre visitas (restaurados antes da 1ª pintura pelo
 script inline do `layout.tsx`, então não tem flash):
 `theme` → a cor do sistema · `gui:hist` → os últimos 60 comandos, que as setas ↑↓ percorrem.
 
+- `iamgui login` → pede senha (`guilherme_mendonca`) → libera **root** e lista todos os
+  comandos escondidos. Fica salvo em `gui:root`; `logout` sai. Depois disso o `help`
+  já mostra a lista completa e o prompt vira `root@iamgui.dev:~#`.
+  A senha está no bundle, como todo código de front — é easter egg, não segurança.
 - `help`, `ls`, `cat <arquivo>` (tem um `.segredo`), `whoami`, `history`, `projetos`, `contato`
 - `theme <cor>` — repinta o **site inteiro**; só `--color-grn` muda, o resto da paleta
   deriva dela via `color-mix` no `globals.css`.

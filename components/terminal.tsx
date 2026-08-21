@@ -103,7 +103,8 @@ const HELP: Line[] = [
   { t: "  projetos ........ índice de projetos" },
   { t: "  contato ......... abrir canal" },
   { t: "  clear / exit .... limpar / fechar" },
-  { t: "  ...e o resto está em `cat .segredo`", k: "dim" },
+  { t: "  iamgui login .... acesso root — revela TODOS os comandos (pede senha)", k: "hi" },
+  { t: "  ...ou vá catando pistas em `cat .segredo`", k: "dim" },
 ];
 
 const HELLO: Line[] = [
@@ -274,6 +275,8 @@ export default function Terminal() {
   const [input, setInput] = useState("");
   const [caret, setCaret] = useState(0); // posição do cursor em bloco
   const [fx, setFx] = useState<Fx>(null);
+  const [askPass, setAskPass] = useState(false);
+  const [root, setRoot] = useState(false);
   const hist = useRef<string[]>([]);
   const histIdx = useRef(-1);
   const timers = useRef<number[]>([]);
@@ -357,6 +360,9 @@ export default function Terminal() {
   // abre por tecla ~ / ` ou pelo evento disparado pelo botão do HUD
   useEffect(() => {
     hist.current = loadHist();
+    try {
+      if (localStorage.getItem(ROOT_KEY)) setRoot(true);
+    } catch {}
     const openIt = () => setOpen(true);
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
@@ -423,7 +429,29 @@ export default function Terminal() {
         return;
       case "help":
       case "ajuda":
-        return push(HELP);
+        return root ? stream(FULL_LIST, 60) : push(HELP);
+
+      case "iamgui":
+      case "login":
+        if (c === "iamgui" && arg !== "login")
+          return push([{ t: "uso: iamgui login", k: "dim" }]);
+        if (root)
+          return push([
+            { t: "você já está como root. `logout` para sair.", k: "dim" },
+          ]);
+        setAskPass(true);
+        return push([
+          { t: "autenticação necessária para acesso root.", k: "hi" },
+          { t: "(dica: é o nome completo dele, em snake_case)", k: "dim" },
+        ]);
+
+      case "logout":
+        if (!root) return push([{ t: "você não está logado.", k: "dim" }]);
+        setRoot(false);
+        try {
+          localStorage.removeItem(ROOT_KEY);
+        } catch {}
+        return push([{ t: "sessão root encerrada.", k: "ok" }]);
       case "clear":
       case "cls":
         return setLines([]);
@@ -627,7 +655,26 @@ export default function Terminal() {
     e.preventDefault();
     finishTyping(); // digitou no meio da intro? completa ela e segue
     const raw = input;
-    push([{ t: `${PROMPT} ${raw}` }]);
+    setInput("");
+    setCaret(0);
+
+    // modo senha: não ecoa em claro e não entra no histórico
+    if (askPass) {
+      setAskPass(false);
+      push([{ t: `senha: ${"*".repeat(raw.length)}` }]);
+      if (raw !== PASSWORD)
+        return push([
+          { t: "Sorry, try again.", k: "err" },
+          { t: "este incidente NÃO será reportado. relaxa.", k: "dim" },
+        ]);
+      setRoot(true);
+      try {
+        localStorage.setItem(ROOT_KEY, "1");
+      } catch {}
+      return stream(FULL_LIST, 60);
+    }
+
+    push([{ t: `${ps1} ${raw}` }]);
     if (raw.trim()) {
       // sem repetir o comando anterior, igual bash com HISTCONTROL=ignoredups
       const dedup = hist.current[0] === raw.trim() ? hist.current : [raw.trim(), ...hist.current];
@@ -635,8 +682,6 @@ export default function Terminal() {
       histIdx.current = -1;
       saveHist(hist.current);
     }
-    setInput("");
-    setCaret(0);
     run(raw);
   };
 
@@ -650,6 +695,9 @@ export default function Terminal() {
     setInput(v);
     setCaret(v.length);
   };
+
+  const ps1 = askPass ? "senha:" : root ? ROOT_PROMPT : PROMPT;
+  const shown = askPass ? "*".repeat(input.length) : input;
 
   const syncCaret = (e: React.SyntheticEvent<HTMLInputElement>) =>
     setCaret(e.currentTarget.selectionStart ?? 0);
@@ -682,7 +730,10 @@ export default function Terminal() {
             {/* sem .panel aqui: o gradiente dela sobrescreveria o fundo opaco */}
             <div className="brk flex h-[70vh] w-full max-w-4xl flex-col border border-grn/30 bg-bg/95 shadow-[0_0_60px_rgba(0,0,0,0.8)] backdrop-blur-md sm:h-[60vh]">
               <div className="flex items-center gap-3 border-b border-grn/20 px-4 py-2">
-                <span className="lbl shrink-0">GUI_TERM v1.3</span>
+                <span className="lbl shrink-0">
+                  GUI_TERM v1.3
+                  {root && <span className="ml-2 text-alert">· ROOT</span>}
+                </span>
                 <span className="lbl hidden flex-1 text-center md:block">
                   ↑↓ histórico · ESC fecha
                 </span>
@@ -721,8 +772,11 @@ export default function Terminal() {
                 </div>
 
                 <form onSubmit={submit} className="flex items-start gap-2">
-                  <label htmlFor="gui-term" className="shrink-0 text-grn">
-                    {PROMPT}
+                  <label
+                    htmlFor="gui-term"
+                    className={`shrink-0 ${askPass ? "text-alert" : "text-grn"}`}
+                  >
+                    {ps1}
                   </label>
 
                   {/* o input real fica invisível por cima; o espelho abaixo desenha o
@@ -744,18 +798,18 @@ export default function Terminal() {
                       onClick={syncCaret}
                       autoComplete="off"
                       spellCheck={false}
-                      aria-label="Digite um comando"
+                      aria-label={askPass ? "Senha" : "Digite um comando"}
                       className="no-ring absolute inset-0 w-full bg-transparent text-transparent caret-transparent outline-none"
                     />
                     <div
                       aria-hidden
                       className="pointer-events-none whitespace-pre text-grn-2"
                     >
-                      {input.slice(0, caret)}
+                      {shown.slice(0, caret)}
                       <span className="animate-blink bg-grn text-bg">
-                        {input[caret] ?? " "}
+                        {shown[caret] ?? " "}
                       </span>
-                      {input.slice(caret + 1)}
+                      {shown.slice(caret + 1)}
                     </div>
                   </div>
                 </form>
