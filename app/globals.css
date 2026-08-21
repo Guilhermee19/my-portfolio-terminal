@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #03070500;
+  --color-bg: #030806;
+  --color-bg-2: #050d09;
+  /* só --color-grn é literal: o resto deriva dela, então o comando `theme` do
+     terminal repinta o site inteiro trocando uma única custom property. */
+  --color-grn: #2bff88;
+  --color-grn-2: color-mix(in oklab, var(--color-grn) 58%, #ffffff);
+  --color-dim: color-mix(in oklab, var(--color-grn) 62%, #04140c);
+  --color-deep: color-mix(in oklab, var(--color-grn) 22%, #04140c);
+  --color-alert: #ff3b30;
+
+  --font-mono: var(--font-jet), ui-monospace, "Courier New", monospace;
+
+  --animate-blink: blink 1.05s steps(1) infinite;
+  --animate-sweep: sweep 7s linear infinite;
+  --animate-flick: flick 6s steps(1) infinite;
+  --animate-marq: marq 32s linear infinite;
+  --animate-crawl: crawl 9s linear infinite;
+  --animate-glitch: glitch 0.35s steps(2) infinite;
+}
+
+@keyframes blink { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }
+@keyframes sweep { 0% { transform: translateY(-10%) } 100% { transform: translateY(110%) } }
+@keyframes flick { 0%,96%,100% { opacity: .035 } 97% { opacity: .07 } 98% { opacity: .02 } }
+@keyframes marq { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
+@keyframes bar { 0% { transform: translateX(-100%) } 100% { transform: translateX(0) } }
+
+/* easter egg do `bug`: o inseto atravessa a tela em zigue-zague */
+@keyframes crawl {
+  0%   { transform: translate(-12vw, 0) rotate(96deg) }
+  25%  { transform: translate(28vw, 14vh) rotate(72deg) }
+  50%  { transform: translate(56vw, -6vh) rotate(104deg) }
+  75%  { transform: translate(84vw, 18vh) rotate(80deg) }
+  100% { transform: translate(112vw, 4vh) rotate(96deg) }
+}
+@keyframes glitch {
+  0%, 100% { transform: translate(0) }
+  20% { transform: translate(-3px, 1px) }
+  40% { transform: translate(3px, -2px) }
+  60% { transform: translate(-2px, -1px) }
+  80% { transform: translate(2px, 2px) }
+}
+
+:root { color-scheme: dark; }
+[data-booted] #boot { display: none; }
+
+html {
+  scroll-behavior: smooth;
+  /* fundo: grade pontilhada + vinheta verde, tudo em CSS (zero imagem) */
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--color-grn) 7%, transparent), transparent 55%),
+    linear-gradient(color-mix(in oklab, var(--color-grn) 5.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-grn) 5.5%, transparent) 1px, transparent 1px);
+  background-size: 100% 100%, 34px 34px, 34px 34px;
+  background-attachment: fixed;
+}
+
+body {
+  color: var(--color-grn-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--color-grn); color: #001a0d; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: #040b08; }
+::-webkit-scrollbar-thumb { background: var(--color-deep); border: 1px solid var(--color-dim); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-dim); }
+
+/* .no-ring: o input do terminal já mostra foco pelo cursor em bloco.
+   (esta regra está fora de @layer, então venceria qualquer utility do Tailwind) */
+:focus-visible:not(.no-ring) { outline: 2px solid var(--color-grn); outline-offset: 3px; }
+
+/* ---- chrome do CRT (overlays fixos, nunca interativos) ---- */
+.crt-scan {
+  background-image: repeating-linear-gradient(
+    0deg, rgba(0, 0, 0, 0.34) 0px, rgba(0, 0, 0, 0.34) 1px, transparent 1px, transparent 3px
+  );
+}
+.crt-glow {
+  box-shadow:
+    inset 0 0 180px color-mix(in oklab, var(--color-grn) 9%, transparent),
+    inset 0 0 40px rgba(0, 0, 0, 0.9);
+}
+
+/* moldura com cantos em L, igual HUD das referências */
+@utility brk {
+  position: relative;
+  &::before, &::after {
+    content: ""; position: absolute; width: 13px; height: 13px; pointer-events: none;
+    border-color: var(--color-grn);
+  }
+  &::before { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
+  &::after { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+}
+
+@utility panel {
+  border: 1px solid color-mix(in oklab, var(--color-grn) 22%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-grn) 4.5%, transparent),
+    color-mix(in oklab, var(--color-grn) 1.2%, transparent)
+  );
+}
+
+@utility glow {
+  text-shadow:
+    0 0 12px color-mix(in oklab, var(--color-grn) 55%, transparent),
+    0 0 2px color-mix(in oklab, var(--color-grn) 90%, transparent);
+}
+
+/* tipografia listrada tipo "WINDOWS84" */
+@utility striped {
+  background-image: repeating-linear-gradient(
+    0deg, var(--color-grn) 0 3px, color-mix(in oklab, var(--color-grn) 28%, transparent) 3px 5px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility lbl {
+  font-size: 10px; letter-spacing: 0.22em; color: var(--color-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}

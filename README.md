@@ -28,11 +28,15 @@ Para editar/adicionar comandos, é o mapa `QUIPS` (piadas) ou o `switch` do `run
 ## O terminal
 
 Abre pelo botão `>_` da topbar, pelo `>_ ABRIR TERMINAL` do hero ou pela tecla `~`.
-Reescreve a intro a cada abertura, tem histórico com ↑↓, cursor em bloco e fecha no ESC.
+Reescreve a intro a cada abertura, cursor em bloco, fecha no ESC.
 
-- `help`, `ls`, `cat <arquivo>` (tem um `.segredo`), `whoami`, `projetos`, `contato`
+Persistem no `localStorage` entre visitas (restaurados antes da 1ª pintura pelo
+script inline do `layout.tsx`, então não tem flash):
+`theme` → a cor do sistema · `gui:hist` → os últimos 60 comandos, que as setas ↑↓ percorrem.
+
+- `help`, `ls`, `cat <arquivo>` (tem um `.segredo`), `whoami`, `history`, `projetos`, `contato`
 - `theme <cor>` — repinta o **site inteiro**; só `--color-grn` muda, o resto da paleta
-  deriva dela via `color-mix` no `globals.css`. Fica salvo no `localStorage`.
+  deriva dela via `color-mix` no `globals.css`.
 - `hello world`, `marvel`, `jarvis`, `404`, `bug`, `hack`, `matrix`, `konami`
 - front: `!important`, `z-index`, `center`, `npm install`, `undefined`, `nan`, `console.log`, `hydration`
 - back: `sql`, `docker`, `k8s`, `cache`, `regex`, `deploy`, `env`, `chmod 777`, `vim`, `500`
