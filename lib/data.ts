@@ -1,17 +1,18 @@
 export const profile = {
-  handle: "GUI_SANTANA",
-  name: "Guilherme Santana Rocha",
+  handle: "I_AM_GUI",
+  name: "Guilherme Santana Rocha Mendonça",
   role: "FRONT-END ENGINEER",
   unit: "UNIT SR-A · RIO DE JANEIRO / BR",
   build: "BUILD 06.2020 → PRESENT",
   email: "eu@iamgui.dev",
   intro:
-    "Seis anos escrevendo interface. Comecei em 2014 num HTML que eu não entendia e continuo pelo mesmo motivo: gosto de ver a coisa ganhar vida na tela. Hoje trabalho com Angular, React e Next — e quando o projeto deixa, com Three.js, porque tela plana é limitação de ferramenta, não de ideia.",
+    "Mais de sete anos escrevendo interface. Comecei em 2014 num HTML que eu não entendia e continuo pelo mesmo motivo: gosto de ver a coisa ganhar vida na tela. Hoje trabalho com Angular, React, Next e Three.js, porque tela plana é limitação de ferramenta, não de ideia.",
   socials: [
     { label: "GITHUB", href: "https://github.com/Guilhermee19" },
     { label: "LINKEDIN", href: "https://www.linkedin.com/in/gui-santana/" },
     { label: "CODEPEN", href: "https://codepen.io/Guilhermee19" },
     { label: "V1.ARCHIVE", href: "https://v1.iamgui.dev/" },
+    { label: "V2.ARCHIVE", href: "https://v2.iamgui.dev/" },
   ],
 };
 
@@ -19,16 +20,16 @@ export const stats = [
   { value: "06+", label: "ANOS DE ESTRADA" },
   { value: "50", label: "REPOS PÚBLICOS" },
   { value: "1998", label: "REV. INICIAL" },
-  { value: "24/7", label: "SYS ONLINE" },
+  { value: "19/7", label: "SYS ONLINE" },
 ];
 
 export const stack = [
-  { name: "TYPESCRIPT", level: 94, tag: "CORE Ø1/\\" },
-  { name: "ANGULAR", level: 92, tag: "CORE Ø2/\\" },
-  { name: "REACT / NEXT", level: 90, tag: "CORE Ø2/2" },
-  { name: "SASS / TAILWIND", level: 88, tag: "CORE Ø3/\\" },
-  { name: "THREE.JS / GSAP", level: 74, tag: "CORE Ø4/\\" },
-  { name: "NODE / DJANGO", level: 68, tag: "CORE Ø5/\\" },
+  { name: "TYPESCRIPT", level: 86, tag: "CORE Ø1/\\" },
+  { name: "ANGULAR", level: 81, tag: "CORE Ø2/\\" },
+  { name: "REACT / NEXT", level: 73, tag: "CORE Ø2/2" },
+  { name: "SASS / TAILWIND", level: 91, tag: "CORE Ø3/\\" },
+  { name: "THREE.JS / GSAP", level: 46, tag: "CORE Ø4/\\" },
+  { name: "NODE / DJANGO", level: 39, tag: "CORE Ø5/\\" },
 ];
 
 export const services = [
@@ -71,7 +72,7 @@ export type Project = {
   tech: string[];
   year: string;
   href?: string;
-  status: "ONLINE" | "ARQUIVO" | "EM CURSO";
+  status: "ONLINE" | "ARQUIVO" | "EM CURSO" | "EM DESENVOLVIMENTO";
 };
 
 export const projects: Project[] = [
@@ -99,7 +100,8 @@ export const projects: Project[] = [
     desc: "Plataforma para mestrar campanha de RPG: fichas, personagens e sessões. Nasceu de uma mesa que precisava de menos papel.",
     tech: ["REACT", "TYPESCRIPT", "TAILWIND", "DJANGO"],
     year: "2026",
-    status: "EM CURSO",
+    href: "https://cavernadomestre.com.br/",
+    status: "EM DESENVOLVIMENTO",
   },
   {
     idx: "Ø4",
@@ -142,6 +144,15 @@ export const projects: Project[] = [
     tech: ["NEXT.JS"],
     year: "2025",
     status: "ARQUIVO",
+  },
+  {
+    idx: "Ø9",
+    name: "CINETRACKER",
+    desc: "Marcar os filmes e séries que já assistiu, os que quer assistir e os que está assistindo no momento.",
+    tech: ["REACT"],
+    year: "2024",
+    href: "https://my-queue-pad.vercel.app/",
+    status: "ONLINE",
   },
 ];
 
