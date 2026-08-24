@@ -1167,7 +1167,16 @@ export default function Terminal() {
               >
                 <div role="log" aria-live="polite">
                   {lines.map((l, i) => (
-                    <div key={i} className={color(l.k)}>
+                    <div
+                      key={i}
+                      /* linha larga (ASCII art) encolhe no celular em vez de
+                         quebrar no meio — quebrada, o desenho se desfaz */
+                      className={`${color(l.k)} ${
+                        l.t.length > 44
+                          ? "text-[8px] leading-[12px] sm:text-[12px] sm:leading-6"
+                          : ""
+                      }`}
+                    >
                       {l.t || " "}
                     </div>
                   ))}
