@@ -7,6 +7,11 @@ import { INSTALLERS, install, SHELL, type Line } from "@/lib/commands";
 import { fetchBoard, type Board } from "@/lib/scores";
 import Snake from "@/components/snake";
 import Matrix from "@/components/matrix";
+import GoHorse from "@/components/gohorse";
+import VSCode from "@/components/vscode";
+import Creeper from "@/components/creeper";
+import Lost from "@/components/lost";
+import { REFS } from "@/lib/refs";
 
 type Fx = null | "404" | "bug" | "shutdown";
 
@@ -67,7 +72,8 @@ const FULL_LIST: Line[] = [
   { t: "" },
   { t: "VERSÕES E EDITORES", k: "hi" },
   { t: "  node -v · npm -v · python --version · git --version", k: "dim" },
-  { t: "  vim · nano · emacs · code .", k: "dim" },
+  { t: "  vim · nano · emacs", k: "dim" },
+  { t: "  code .  →  abre o editor com o CSS e o markup deste site", k: "dim" },
   { t: "" },
   { t: "GIT", k: "hi" },
   {
@@ -90,9 +96,27 @@ const FULL_LIST: Line[] = [
   { t: "" },
   { t: "TELAS CHEIAS", k: "hi" },
   { t: "  404 · bug · matrix (escolha a pílula) · shutdown", k: "dim" },
+  { t: "  gohorse / xgh  →  a metodologia · code .  →  o editor", k: "dim" },
+  { t: "  creeper  →  não digite. sério.", k: "dim" },
   { t: "" },
-  { t: "REFERÊNCIAS", k: "hi" },
-  { t: "  marvel · jarvis", k: "dim" },
+  { t: "REFERÊNCIAS GEEK", k: "hi" },
+  {
+    t: "  marvel · jarvis · batman · groot · wakanda · pikachu · zelda · doom",
+    k: "dim",
+  },
+  {
+    t: "  42 · hal · skynet · jurassic · delorean · force · mordor · hodor",
+    k: "dim",
+  },
+  { t: "  nemo · cake · spoon · 1337 · r2d2 · lost (tela cheia)", k: "dim" },
+  { t: "" },
+  { t: "INTELIGÊNCIAS ARTIFICIAIS", k: "hi" },
+  { t: "  ia  →  lista todas", k: "dim" },
+  {
+    t: "  claude · chatgpt · gemini · copilot · cursor · deepseek · midjourney",
+    k: "dim",
+  },
+  { t: "  prompt", k: "dim" },
   { t: "" },
   { t: "FRONT-END", k: "hi" },
   {
@@ -144,6 +168,14 @@ const FILES: Record<string, Line[]> = {
     { t: "// comandos que ninguém te contou:", k: "dim" },
     {
       t: "   hello world · marvel · jarvis · 404 · bug · hack · matrix · konami",
+      k: "hi",
+    },
+    {
+      t: "   gohorse · code . · creeper · snake · shutdown · ipconfig · lost",
+      k: "hi",
+    },
+    {
+      t: "   geek: batman · 42 · nemo · hal · skynet · force · doom · cake · ia",
       k: "hi",
     },
     {
@@ -387,9 +419,12 @@ export default function Terminal() {
   const [askPass, setAskPass] = useState(false);
   const [root, setRoot] = useState(false);
   const [game, setGame] = useState<null | "snake">(null);
-  const [matrix, setMatrix] = useState(false);
-  const gameRef = useRef<null | "snake">(null);
-  gameRef.current = game; // o listener global de `~` lê isto sem re-registrar
+  const [screen, setScreen] = useState<
+    null | "matrix" | "gohorse" | "code" | "creeper" | "lost"
+  >(null);
+  const busyRef = useRef(false);
+  // enquanto uma tela cheia estiver aberta, o `~` global fica quieto
+  busyRef.current = game !== null || screen !== null;
   const hist = useRef<string[]>([]);
   const histIdx = useRef(-1);
   const timers = useRef<number[]>([]);
@@ -480,7 +515,7 @@ export default function Terminal() {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
-      if (gameRef.current) return; // durante o jogo o teclado é dele
+      if (busyRef.current) return; // tela cheia aberta: o teclado é dela
       if (e.key === "~" || e.key === "`") {
         e.preventDefault();
         setOpen((v) => !v);
@@ -542,6 +577,10 @@ export default function Terminal() {
     // saída de sistema: casa a frase inteira ("df -h") ou só o comando ("uptime")
     const sys = SHELL[full] ?? SHELL[c];
     if (sys) return stream(sys, sys.length > 6 ? 90 : 200);
+
+    // referências geek e IAs
+    const ref = REFS[full] ?? REFS[c];
+    if (ref) return stream(ref, 240);
 
     // piadas de dev: mesma regra de lookup
     const quip = QUIPS[full] ?? QUIPS[c];
@@ -883,7 +922,33 @@ export default function Terminal() {
           { t: "acorda...", k: "dim" },
           { t: "siga o coelho de CSS.", k: "ok" },
         ]);
-        return setMatrix(true);
+        return setScreen("matrix");
+
+      case "gohorse":
+      case "xgh":
+      case "go-horse":
+        push([
+          { t: "carregando eXtreme Go Horse Process...", k: "err" },
+          { t: "(a metodologia que ninguém assume usar)", k: "dim" },
+        ]);
+        return setScreen("gohorse");
+
+      case "code":
+        push([{ t: "abrindo o editor — só a camada de tela.", k: "ok" }]);
+        return setScreen("code");
+
+      case "lost":
+      case "4815162342":
+      case "dharma":
+        push([{ t: "acessando a Estação Cisne...", k: "dim" }]);
+        return setScreen("lost");
+
+      case "creeper":
+        push([
+          { t: "movimento detectado atrás de você.", k: "err" },
+          { t: "Tsssss...", k: "err" },
+        ]);
+        return setScreen("creeper");
 
       case "coffee":
       case "cafe":
@@ -1119,10 +1184,15 @@ export default function Terminal() {
         />
       )}
 
-      {matrix && (
+      {screen === "gohorse" && <GoHorse onExit={() => setScreen(null)} />}
+      {screen === "code" && <VSCode onExit={() => setScreen(null)} />}
+      {screen === "creeper" && <Creeper onExit={() => setScreen(null)} />}
+      {screen === "lost" && <Lost onExit={() => setScreen(null)} />}
+
+      {screen === "matrix" && (
         <Matrix
           onExit={(choice) => {
-            setMatrix(false);
+            setScreen(null);
             push(
               choice === "vermelha"
                 ? [

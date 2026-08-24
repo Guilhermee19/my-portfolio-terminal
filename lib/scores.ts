@@ -60,6 +60,23 @@ export function upsert(list: Score[], id: string, score: number, now: string) {
 
 // ── fallback local ────────────────────────────────────────
 const LOCAL_KEY = "gui:scores";
+const NAME_KEY = "gui:snake-name";
+
+/** Último código gravado: volta preenchido na próxima partida, tipo fliperama de bar. */
+export function lastName(): string {
+  try {
+    const v = (localStorage.getItem(NAME_KEY) ?? "").toUpperCase();
+    return INITIALS.test(v) ? v : "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberName(id: string) {
+  try {
+    localStorage.setItem(NAME_KEY, id);
+  } catch {}
+}
 
 function readLocal(): Score[] {
   try {
@@ -100,6 +117,7 @@ export async function fetchBoard(): Promise<Board> {
 
 export async function submitScore(name: string, score: number): Promise<Board> {
   const id = name.trim().toUpperCase();
+  rememberName(id); // guarda mesmo se a gravação falhar — é preferência local
   try {
     const r = await fetch("/api/scores", {
       method: "POST",

@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { SLOTS, fetchBoard, submitScore, type Board } from "@/lib/scores";
+import {
+  SLOTS,
+  fetchBoard,
+  lastName,
+  submitScore,
+  type Board,
+} from "@/lib/scores";
 
 const COLS = 28;
 const ROWS = 20;
@@ -34,6 +40,10 @@ const START = (): {
 
 const pad = (n: number, len = 5) => String(n).padStart(len, "0");
 
+/** "GUI" → ["G","U","I","_","_"] */
+const toSlots = (name: string) =>
+  name.padEnd(SLOTS, EMPTY).slice(0, SLOTS).split("");
+
 export default function Snake({
   onExit,
 }: {
@@ -49,9 +59,7 @@ export default function Snake({
   const [speed, setSpeed] = useState(150);
   const [hi, setHi] = useState(0);
   const [board, setBoard] = useState<Board | null>(null);
-  const [initials, setInitials] = useState<string[]>(
-    Array.from({ length: SLOTS }, (_, i) => (i === 0 ? "A" : EMPTY)),
-  );
+  const [initials, setInitials] = useState<string[]>(() => toSlots("A"));
   const [slot, setSlot] = useState(0);
   const [saving, setSaving] = useState(false);
   const lastResult = useRef<{
@@ -66,6 +74,12 @@ export default function Snake({
 
   useEffect(() => {
     setHi(Number(localStorage.getItem(HI_KEY) ?? 0));
+    // quem já jogou volta com o código preenchido: é só apertar ENTER
+    const saved = lastName();
+    if (saved) {
+      setInitials(toSlots(saved));
+      setSlot(Math.min(saved.length, SLOTS - 1));
+    }
   }, []);
 
   const newFood = useCallback(() => {
@@ -128,8 +142,7 @@ export default function Snake({
     g.current = START();
     setSpeed(150);
     setBoard(null);
-    setSlot(0);
-    setPhase("playing");
+    setPhase("playing"); // o código digitado fica pra próxima partida
     repaint();
   }, []);
 

@@ -67,6 +67,19 @@ script inline do `layout.tsx`, então não tem flash):
 - back: `sql`, `docker`, `k8s`, `cache`, `regex`, `deploy`, `env`, `chmod 777`, `vim`, `500`
 - e ainda `git blame`, `stackoverflow`, `tabs`, `python`, `coffee`, `sudo`, `rm`
 
+### Telas cheias (um componente cada, em `components/`)
+
+| Comando | O quê |
+|---|---|
+| `matrix` | chuva de código em canvas + escolha da pílula vermelha/azul |
+| `gohorse` / `xgh` | os axiomas do eXtreme Go Horse e o certificado |
+| `code .` | editor fake com o CSS e o markup **deste** site (sem a lógica) |
+| `creeper` | o susto, a explosão em blocos e a tela de manutenção |
+| `lost` | o contador da escotilha, 1Ø8 min; digite 4 8 15 16 23 42 pra reiniciar |
+| `shutdown` | o site colapsa como um tubo CRT desligando |
+| `404` · `bug` | tela de 404 e kernel panic com os insetos |
+| `snake` | o fliperama (ver acima) |
+
 ### Comandos de shell (`lib/commands.ts`)
 
 Pra parecer um terminal de verdade, não só um menu:
@@ -83,6 +96,18 @@ Pra parecer um terminal de verdade, não só um menu:
 
 Saída fixa vai no mapa `SHELL`; o que precisa do argumento (instaladores, `echo`, `ssh`…)
 está no `switch` do `run()` em `terminal.tsx`.
+
+### Referências geek e IAs (`lib/refs.ts`)
+
+Mapa `REFS`, mesma regra de lookup dos outros.
+
+- **IAs**, cada uma respondendo no estilo dela: `claude`, `chatgpt`, `gemini`, `copilot`,
+  `cursor`, `deepseek`, `midjourney`, `prompt` — e `ia` lista todas.
+- **Geek**: `batman`, `42`, `nemo`, `hal`, `skynet`, `jurassic`, `delorean`, `force`,
+  `groot`, `wakanda`, `hodor`, `mordor`, `cake`, `doom`, `zelda`, `pikachu`, `r2d2`,
+  `1337`, `spoon` — cada um com vários aliases (`i am batman`, `hal 9000`, `88mph`…).
+
+Nada de diálogo copiado de filme: as respostas são escritas aqui, a graça é a piscadela.
 
 ## O arcade (`snake`)
 

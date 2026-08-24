@@ -224,10 +224,6 @@ export const SHELL: Record<string, Line[]> = {
       k: "ok",
     },
   ],
-  "code .": [
-    { t: "abrindo VS Code no diretório atual...", k: "ok" },
-    { t: "38 extensões carregadas. 4 você lembra de ter instalado.", k: "dim" },
-  ],
   // ── perigosos ───────────────────────────────────────────
   "kill -9": [
     { t: "kill: falta o PID.", k: "err" },
@@ -258,7 +254,6 @@ Object.assign(SHELL, {
   "docker compose up": SHELL["docker ps"],
   node: SHELL["node -v"],
   "git log --oneline": SHELL["git log"],
-  code: SHELL["code ."],
   vi: SHELL.nano,
   umount: SHELL.mount,
   "ipconfig /all": SHELL.ipconfig,
