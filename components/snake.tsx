@@ -2,23 +2,23 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import {
-  SLOTS,
-  fetchBoard,
-  lastName,
-  submitScore,
-  type Board,
-} from "@/lib/scores";
+  Attract,
+  Cabinet,
+  GameOver,
+  Initials,
+  Key,
+  Marquee,
+  Paused,
+  Scoreboard,
+  useArcade,
+  type Result,
+} from "@/components/arcade";
 
 const COLS = 28;
 const ROWS = 20;
 const POINTS = 10;
-/** "_" é o slot vazio: some no envio, então dá pra usar de 1 a 5 caracteres. */
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
-const EMPTY = "_";
-const HI_KEY = "gui:snake-hi";
 
 type P = { x: number; y: number };
-type Phase = "attract" | "playing" | "paused" | "over" | "initials" | "board";
 
 const START = (): {
   snake: P[];
@@ -38,49 +38,12 @@ const START = (): {
   score: 0,
 });
 
-const pad = (n: number, len = 5) => String(n).padStart(len, "0");
-
-/** "GUI" → ["G","U","I","_","_"] */
-const toSlots = (name: string) =>
-  name.padEnd(SLOTS, EMPTY).slice(0, SLOTS).split("");
-
-export default function Snake({
-  onExit,
-}: {
-  onExit: (r: {
-    score: number;
-    rank: number | null;
-    name: string | null;
-  }) => void;
-}) {
+export default function Snake({ onExit }: { onExit: (r: Result) => void }) {
   const g = useRef(START());
   const [, repaint] = useReducer((n: number) => n + 1, 0);
-  const [phase, setPhase] = useState<Phase>("attract");
   const [speed, setSpeed] = useState(150);
-  const [hi, setHi] = useState(0);
-  const [board, setBoard] = useState<Board | null>(null);
-  const [initials, setInitials] = useState<string[]>(() => toSlots("A"));
-  const [slot, setSlot] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const lastResult = useRef<{
-    score: number;
-    rank: number | null;
-    name: string | null;
-  }>({
-    score: 0,
-    rank: null,
-    name: null,
-  });
-
-  useEffect(() => {
-    setHi(Number(localStorage.getItem(HI_KEY) ?? 0));
-    // quem já jogou volta com o código preenchido: é só apertar ENTER
-    const saved = lastName();
-    if (saved) {
-      setInitials(toSlots(saved));
-      setSlot(Math.min(saved.length, SLOTS - 1));
-    }
-  }, []);
+  const a = useArcade("snake");
+  const { phase, setPhase } = a;
 
   const newFood = useCallback(() => {
     const taken = new Set(g.current.snake.map((s) => `${s.x},${s.y}`));
@@ -94,18 +57,6 @@ export default function Snake({
     };
   }, []);
 
-  const die = useCallback(() => {
-    const score = g.current.score;
-    lastResult.current = { score, rank: null, name: null };
-    if (score > hi) {
-      setHi(score);
-      try {
-        localStorage.setItem(HI_KEY, String(score));
-      } catch {}
-    }
-    setPhase("over");
-  }, [hi]);
-
   const step = useCallback(() => {
     const s = g.current;
     const next = s.queue.shift();
@@ -113,12 +64,13 @@ export default function Snake({
 
     const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
     if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS)
-      return die();
+      return a.die(s.score);
 
     const grows = head.x === s.food.x && head.y === s.food.y;
     // a cauda sai neste tick, então ocupar a última célula é legal (a não ser que cresça)
     const body = grows ? s.snake : s.snake.slice(0, -1);
-    if (body.some((p) => p.x === head.x && p.y === head.y)) return die();
+    if (body.some((p) => p.x === head.x && p.y === head.y))
+      return a.die(s.score);
 
     s.snake.unshift(head);
     if (grows) {
@@ -129,7 +81,7 @@ export default function Snake({
       s.snake.pop();
     }
     repaint();
-  }, [die, newFood]);
+  }, [a, newFood]);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -141,28 +93,10 @@ export default function Snake({
     // a primeira fruta vem em linha reta de propósito: ensina o jogo em 2 segundos
     g.current = START();
     setSpeed(150);
-    setBoard(null);
+    a.setBoard(null);
     setPhase("playing"); // o código digitado fica pra próxima partida
     repaint();
-  }, []);
-
-  const openBoard = useCallback(async (name: string | null) => {
-    setSaving(true);
-    const b = name
-      ? await submitScore(name, lastResult.current.score)
-      : await fetchBoard();
-    lastResult.current = { ...lastResult.current, name, rank: b.rank };
-    setBoard(b);
-    setSaving(false);
-    setPhase("board");
-  }, []);
-
-  /** os "_" são slots vazios: caem fora, então o nome pode ter de 1 a 5 caracteres */
-  const typedName = initials.join("").replaceAll(EMPTY, "");
-  const save = useCallback(() => {
-    const n = initials.join("").replaceAll(EMPTY, "");
-    if (n) void openBoard(n);
-  }, [initials, openBoard]);
+  }, [a, setPhase]);
 
   const turn = useCallback((d: P) => {
     const s = g.current;
@@ -188,46 +122,8 @@ export default function Snake({
     const onKey = (e: KeyboardEvent) => {
       const k = e.key;
       if (k.startsWith("Arrow") || k === " ") e.preventDefault();
-
-      if (k === "Escape") return onExit(lastResult.current);
-
-      if (phase === "attract") return start();
-      // "over" é transição: ignora teclas, senão quem morre com o dedo na seta
-      // reinicia a partida e perde a tela de gravar o score
-      if (phase === "over") return;
-
-      if (phase === "board") {
-        if (k === "Enter") start();
-        return;
-      }
-
-      if (phase === "initials") {
-        if (saving) return;
-        if (k === "Enter") return void save();
-        if (k === "ArrowLeft") return setSlot((i) => (i + SLOTS - 1) % SLOTS);
-        if (k === "ArrowRight" || k === "Tab")
-          return setSlot((i) => (i + 1) % SLOTS);
-        if (k === "ArrowUp" || k === "ArrowDown")
-          return bump(setInitials, slot, k === "ArrowUp" ? 1 : -1);
-        if (k === "Backspace") {
-          setInitials((v) => {
-            const n = [...v];
-            n[slot] = EMPTY;
-            return n;
-          });
-          return setSlot((i) => Math.max(0, i - 1));
-        }
-        const ch = k.toUpperCase();
-        if (ch.length === 1 && ALPHABET.includes(ch)) {
-          setInitials((v) => {
-            const n = [...v];
-            n[slot] = ch;
-            return n;
-          });
-          setSlot((i) => Math.min(SLOTS - 1, i + 1));
-        }
-        return;
-      }
+      if (k === "Escape") return onExit(a.result.current);
+      if (a.handleKey(k, start)) return; // era tecla de attract/over/código/placar
 
       if (k === "p" || k === "P" || k === " ")
         return setPhase((p) => (p === "playing" ? "paused" : "playing"));
@@ -237,17 +133,7 @@ export default function Snake({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, slot, saving, start, turn, save, onExit]);
-
-  // game over → iniciais (ou direto pro placar se zerou)
-  useEffect(() => {
-    if (phase !== "over") return;
-    const id = setTimeout(
-      () => (g.current.score > 0 ? setPhase("initials") : openBoard(null)),
-      1400,
-    );
-    return () => clearTimeout(id);
-  }, [phase, openBoard]);
+  }, [a, start, turn, onExit, setPhase]);
 
   // ── swipe ────────────────────────────────────────────────
   const touch = useRef<P | null>(null);
@@ -280,23 +166,8 @@ export default function Snake({
   });
 
   return (
-    // sem fade: o gabinete precisa ser opaco no primeiro frame, senão o site vaza atrás
-    <div
-      className="fixed inset-0 z-99 flex flex-col items-center justify-center gap-3 bg-bg px-3 py-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Snake"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* marquee do gabinete */}
-      <div className="flex w-full max-w-3xl items-baseline justify-between text-[11px] tracking-[0.2em] sm:text-xs">
-        <span className="text-grn glow">1UP {pad(g.current.score)}</span>
-        <span className="lbl hidden sm:block">GUI-ARCADE · SNAKE</span>
-        <span className="text-dim">
-          HI-SCORE {pad(Math.max(hi, g.current.score))}
-        </span>
-      </div>
+    <Cabinet label="Snake" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <Marquee title="SNAKE" score={g.current.score} hi={a.hi} />
 
       {/* a telinha: moldura grossa + brilho interno, tipo tubo de fliperama */}
       <div className="brk relative rounded-md border-2 border-grn/40 bg-[#01110a] p-2 shadow-[inset_0_0_60px_rgba(0,0,0,0.9)] sm:p-3">
@@ -332,93 +203,18 @@ export default function Snake({
 
         {overlay && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-bg/92 px-4 text-center">
-            {phase === "attract" && (
-              <>
-                <p className="text-lg font-extrabold tracking-[0.3em] text-grn glow sm:text-2xl">
-                  S N A K E
-                </p>
-                <p className="lbl mt-1">GUI-ARCADE · 1 CRÉDITO</p>
-                <p className="mt-4 animate-blink text-sm tracking-[0.25em] text-grn">
-                  PRESS START
-                </p>
-                <p className="lbl mt-4">qualquer tecla ou toque para começar</p>
-              </>
-            )}
-
-            {phase === "over" && (
-              <>
-                <p className="animate-glitch text-xl font-extrabold tracking-[0.25em] text-alert sm:text-3xl">
-                  GAME OVER
-                </p>
-                <p className="mt-3 text-sm text-grn">
-                  SCORE {pad(g.current.score)}
-                </p>
-              </>
-            )}
-
+            {phase === "attract" && <Attract title="SNAKE" />}
+            {phase === "over" && <GameOver score={g.current.score} />}
             {phase === "initials" && (
-              <>
-                <p className="text-sm tracking-[0.25em] text-grn glow">
-                  INSIRA SEU CÓDIGO
-                </p>
-                <p className="lbl mt-1">SCORE {pad(g.current.score)}</p>
-                <div className="mt-4 flex gap-2">
-                  {initials.map((ch, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSlot(i)}
-                      aria-label={`Caractere ${i + 1}: ${ch === EMPTY ? "vazio" : ch}`}
-                      className={`flex h-12 w-9 items-center justify-center border text-xl font-extrabold sm:h-14 sm:w-11 sm:text-2xl ${
-                        i === slot
-                          ? "animate-blink border-grn text-grn glow"
-                          : ch === EMPTY
-                            ? "border-grn/20 text-dim"
-                            : "border-grn/30 text-grn-2"
-                      }`}
-                    >
-                      {ch}
-                    </button>
-                  ))}
-                </div>
-                {/* no celular não tem seta: os botões viram o joystick */}
-                <div className="mt-3 flex gap-2 sm:hidden">
-                  <Key onClick={() => bump(setInitials, slot, 1)}>▲</Key>
-                  <Key onClick={() => bump(setInitials, slot, -1)}>▼</Key>
-                  <Key onClick={() => setSlot((i) => (i + SLOTS - 1) % SLOTS)}>
-                    ◀
-                  </Key>
-                  <Key onClick={() => setSlot((i) => (i + 1) % SLOTS)}>▶</Key>
-                </div>
-                <button
-                  disabled={saving || !typedName}
-                  onClick={save}
-                  className="brk mt-5 border border-grn px-6 py-2 text-xs tracking-[0.25em] text-grn transition-colors hover:bg-grn hover:text-bg disabled:opacity-40"
-                >
-                  {saving ? "GRAVANDO..." : "» GRAVAR «"}
-                </button>
-                <p className="lbl mt-3 hidden sm:block">
-                  ↑↓ letra · ←→ slot · digite direto · BACKSPACE apaga · ENTER
-                  grava
-                </p>
-                <p className="lbl mt-1">
-                  {SLOTS} caracteres · &quot;_&quot; fica de fora
-                </p>
-              </>
+              <Initials score={g.current.score} arcade={a} />
             )}
-
-            {phase === "board" && board && (
-              <Scoreboard board={board} me={lastResult.current} />
+            {phase === "board" && a.board && (
+              <Scoreboard board={a.board} me={a.result.current} />
             )}
           </div>
         )}
 
-        {phase === "paused" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-bg/80">
-            <p className="animate-blink text-lg tracking-[0.3em] text-grn glow">
-              PAUSA
-            </p>
-          </div>
-        )}
+        {phase === "paused" && <Paused />}
       </div>
 
       {/* d-pad: sem isso o jogo é injogável no celular */}
@@ -444,107 +240,12 @@ export default function Snake({
         <span className="hidden sm:block">← ↑ ↓ → MOVER · [P] PAUSA</span>
         <span className="sm:hidden">DESLIZE OU USE O D-PAD</span>
         <button
-          onClick={() => onExit(lastResult.current)}
+          onClick={() => onExit(a.result.current)}
           className="border border-grn/30 px-3 py-1 transition-colors hover:border-alert hover:text-alert"
         >
           [ESC] SAIR
         </button>
       </div>
-    </div>
-  );
-}
-
-function bump(
-  set: React.Dispatch<React.SetStateAction<string[]>>,
-  slot: number,
-  dir: number,
-) {
-  set((v) => {
-    const n = [...v];
-    const i =
-      (ALPHABET.indexOf(n[slot]) + dir + ALPHABET.length) % ALPHABET.length;
-    n[slot] = ALPHABET[i];
-    return n;
-  });
-}
-
-function Key({
-  children,
-  onClick,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="h-12 w-12 border border-grn/40 text-grn active:bg-grn active:text-bg"
-    >
-      {children}
-    </button>
-  );
-}
-
-function Scoreboard({
-  board,
-  me,
-}: {
-  board: Board;
-  me: { score: number; rank: number | null; name: string | null };
-}) {
-  const inTop = board.top.some((s) => s.id === me.name);
-  return (
-    <div className="w-full max-w-md text-left">
-      <p className="mb-2 text-center text-sm tracking-[0.25em] text-grn glow">
-        HIGH SCORES
-      </p>
-      {board.offline && (
-        <p className="mb-2 text-center text-[10px] tracking-[0.15em] text-alert">
-          ⚠ SERVIDOR INDISPONÍVEL · PLACAR LOCAL
-        </p>
-      )}
-
-      <div className="text-[11px] leading-6 sm:text-xs">
-        {board.top.length === 0 && (
-          <p className="text-dim">placar vazio. seja o primeiro.</p>
-        )}
-        {board.top.map((s, i) => {
-          const mine = s.id === me.name;
-          return (
-            <div
-              key={s.id}
-              className={`flex justify-between ${mine ? "text-grn glow" : "text-grn-2/70"}`}
-            >
-              <span>
-                {String(i + 1).padStart(2, " ")}. {s.name}
-              </span>
-              <span className="mx-2 flex-1 self-center border-b border-dashed border-grn/15" />
-              <span>
-                {pad(s.score)}
-                {mine ? "  ◄" : ""}
-              </span>
-            </div>
-          );
-        })}
-
-        {me.name && !inTop && me.rank && (
-          <>
-            <div className="text-dim">···</div>
-            <div className="flex justify-between text-grn glow">
-              <span>
-                {String(me.rank).padStart(2, " ")}. {me.name}
-              </span>
-              <span className="mx-2 flex-1 self-center border-b border-dashed border-grn/15" />
-              <span>{pad(me.score)} ◄</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      <p className="mt-4 text-center text-[10px] tracking-[0.2em] text-dim">
-        {me.rank ? `SUA POSIÇÃO: #${me.rank}` : ""} · ENTER JOGA DE NOVO · ESC
-        SAI
-      </p>
-    </div>
+    </Cabinet>
   );
 }

@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { profile, projects, stack, THEMES } from "@/lib/data";
 import { INSTALLERS, install, SHELL, type Line } from "@/lib/commands";
-import { fetchBoard, type Board } from "@/lib/scores";
+import { fetchBoard, type Board, type Game } from "@/lib/scores";
 import Snake from "@/components/snake";
+import Tetris from "@/components/tetris";
+import type { Result } from "@/components/arcade";
 import Matrix from "@/components/matrix";
 import GoHorse from "@/components/gohorse";
 import VSCode from "@/components/vscode";
@@ -82,11 +84,16 @@ const FULL_LIST: Line[] = [
   },
   { t: "" },
   { t: "ARCADE", k: "hi" },
+  { t: "  snake · cobrinha                 →  a cobrinha", k: "dim" },
   {
-    t: "  snake · cobrinha · jogo · play   →  código de 5, placar online",
+    t: "  tetris · blocos                  →  os blocos, estilo Game Boy",
     k: "dim",
   },
-  { t: "  scores · placar · highscores     →  top 1Ø sem jogar", k: "dim" },
+  { t: "  arcade · jogo · play             →  lista as máquinas", k: "dim" },
+  {
+    t: "  scores [snake|tetris]            →  placar (código de 5 caracteres)",
+    k: "dim",
+  },
   { t: "" },
   { t: "CLÁSSICOS", k: "hi" },
   {
@@ -171,7 +178,7 @@ const FILES: Record<string, Line[]> = {
       k: "hi",
     },
     {
-      t: "   gohorse · code . · creeper · snake · shutdown · ipconfig · lost",
+      t: "   gohorse · code . · creeper · snake · tetris · shutdown · ipconfig · lost",
       k: "hi",
     },
     {
@@ -196,8 +203,8 @@ const FILES: Record<string, Line[]> = {
 const HELP: Line[] = [
   { t: "COMANDOS DISPONÍVEIS", k: "hi" },
   { t: "  help ............ esta lista" },
-  { t: "  snake ........... o fliperama. tem placar online.", k: "hi" },
-  { t: "  scores .......... top 1Ø do placar" },
+  { t: "  snake / tetris .. o fliperama. tem placar online.", k: "hi" },
+  { t: "  scores .......... o placar dos dois jogos" },
   { t: "  hello world ..... o primeiro programa de todo mundo" },
   { t: "  ls / cat <arq> .. sistema de arquivos" },
   { t: "  reset ........... reinicia tudo, boot incluído" },
@@ -369,11 +376,14 @@ Object.assign(QUIPS, {
 });
 
 /** Top 10 do arcade formatado como saída de terminal. */
-function boardLines(b: Board): Line[] {
+function boardLines(b: Board, game: Game, limit = 10): Line[] {
   if (!b.top.length)
-    return [{ t: "placar vazio. digite `snake` e seja o primeiro.", k: "dim" }];
+    return [
+      { t: `HIGH SCORES · GUI-ARCADE / ${game.toUpperCase()}`, k: "hi" },
+      { t: `  placar vazio. digite \`${game}\` e seja o primeiro.`, k: "dim" },
+    ];
   return [
-    { t: "HIGH SCORES · GUI-ARCADE / SNAKE", k: "hi" },
+    { t: `HIGH SCORES · GUI-ARCADE / ${game.toUpperCase()}`, k: "hi" },
     ...(b.offline
       ? [
           {
@@ -382,10 +392,10 @@ function boardLines(b: Board): Line[] {
           },
         ]
       : []),
-    ...b.top.map((s, i) => ({
-      t: `  ${String(i + 1).padStart(2, " ")}. ${s.name}  ${".".repeat(
-        20,
-      )}  ${String(s.score).padStart(5, "Ø")}`,
+    ...b.top.slice(0, limit).map((s, i) => ({
+      t: `  ${String(i + 1).padStart(2, " ")}. ${s.name.padEnd(6, " ")}${".".repeat(
+        18,
+      )}  ${String(s.score).padStart(6, "Ø")}`,
       k: (i === 0 ? "ok" : "dim") as Line["k"],
     })),
   ];
@@ -418,7 +428,7 @@ export default function Terminal() {
   const [fx, setFx] = useState<Fx>(null);
   const [askPass, setAskPass] = useState(false);
   const [root, setRoot] = useState(false);
-  const [game, setGame] = useState<null | "snake">(null);
+  const [game, setGame] = useState<null | Game>(null);
   const [screen, setScreen] = useState<
     null | "matrix" | "gohorse" | "code" | "creeper" | "lost"
   >(null);
@@ -625,20 +635,53 @@ export default function Terminal() {
       // ── arcade ──────────────────────────────────────────
       case "snake":
       case "cobrinha":
-      case "jogo":
-      case "play":
         push([
           { t: "carregando GUI-ARCADE · SNAKE", k: "hi" },
           { t: "ESC volta pro terminal.", k: "dim" },
         ]);
         return setGame("snake");
 
+      case "tetris":
+      case "blocos":
+        push([
+          { t: "carregando GUI-ARCADE · TETRIS", k: "hi" },
+          { t: "ESC volta pro terminal.", k: "dim" },
+        ]);
+        return setGame("tetris");
+
+      case "jogo":
+      case "play":
+      case "arcade":
+        return push([
+          { t: "GUI-ARCADE · 2 máquinas disponíveis", k: "hi" },
+          { t: "  snake  ....... a cobrinha", k: "dim" },
+          { t: "  tetris ....... os blocos, estilo Game Boy", k: "dim" },
+        ]);
+
       case "scores":
       case "placar":
-      case "highscores":
+      case "highscores": {
+        // `scores` mostra os dois topos; `scores tetris` abre o top 1Ø de um só
+        const only = arg === "snake" || arg === "tetris" ? (arg as Game) : null;
         push([{ t: "consultando placar...", k: "dim" }]);
-        void fetchBoard().then((b) => push(boardLines(b)));
+        if (only) {
+          void fetchBoard(only).then((b) => push(boardLines(b, only)));
+          return;
+        }
+        void Promise.all([fetchBoard("snake"), fetchBoard("tetris")]).then(
+          ([sn, tt]) =>
+            push([
+              ...boardLines(sn, "snake", 5),
+              { t: "" },
+              ...boardLines(tt, "tetris", 5),
+              {
+                t: "`scores snake` ou `scores tetris` mostra o top 1Ø",
+                k: "dim",
+              },
+            ]),
+        );
         return;
+      }
 
       // ── shell: navegação e arquivos (tudo somente leitura) ──
       case "pwd":
@@ -1043,6 +1086,21 @@ export default function Terminal() {
   const ps1 = askPass ? "senha:" : root ? ROOT_PROMPT : PROMPT;
   const shown = askPass ? "*".repeat(input.length) : input;
 
+  /** Saída da partida: fecha o gabinete e escreve o resultado no log. */
+  const endGame = (g: Game, r: Result) => {
+    setGame(null);
+    push([
+      { t: `partida encerrada · ${g.toUpperCase()}`, k: "hi" },
+      {
+        t: `SCORE ${String(r.score).padStart(6, "Ø")}${
+          r.name ? ` · ${r.name}` : ""
+        }${r.rank ? ` · posição #${r.rank}` : ""}`,
+        k: "ok",
+      },
+      { t: `\`${g}\` joga de novo · \`scores\` mostra o placar`, k: "dim" },
+    ]);
+  };
+
   const syncCaret = (e: React.SyntheticEvent<HTMLInputElement>) =>
     setCaret(e.currentTarget.selectionStart ?? 0);
 
@@ -1163,26 +1221,8 @@ export default function Terminal() {
         )}
       </AnimatePresence>
 
-      {game === "snake" && (
-        <Snake
-          onExit={(r) => {
-            setGame(null);
-            push([
-              { t: "partida encerrada.", k: "hi" },
-              {
-                t: `SCORE ${String(r.score).padStart(5, "Ø")}${
-                  r.name ? ` · ${r.name}` : ""
-                }${r.rank ? ` · posição #${r.rank}` : ""}`,
-                k: "ok",
-              },
-              {
-                t: "`snake` joga de novo · `scores` mostra o placar",
-                k: "dim",
-              },
-            ]);
-          }}
-        />
-      )}
+      {game === "snake" && <Snake onExit={(r) => endGame("snake", r)} />}
+      {game === "tetris" && <Tetris onExit={(r) => endGame("tetris", r)} />}
 
       {screen === "gohorse" && <GoHorse onExit={() => setScreen(null)} />}
       {screen === "code" && <VSCode onExit={() => setScreen(null)} />}

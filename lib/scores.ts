@@ -19,6 +19,9 @@ export type Board = {
   offline: boolean;
 };
 
+/** Cada jogo tem o seu placar; o score de um não se compara com o do outro. */
+export type Game = "snake" | "tetris";
+
 export const TOP_N = 10;
 export const SLOTS = 5; // slots do seletor de iniciais no fliperama
 export const INITIALS = /^[A-Z0-9]{1,5}$/;
@@ -59,13 +62,18 @@ export function upsert(list: Score[], id: string, score: number, now: string) {
 }
 
 // ── fallback local ────────────────────────────────────────
-const LOCAL_KEY = "gui:scores";
-const NAME_KEY = "gui:snake-name";
+/** Placar é por jogo; o código do jogador é o mesmo nos dois. */
+const localKey = (game: Game) => `gui:scores:${game}`;
+const NAME_KEY = "gui:code";
 
 /** Último código gravado: volta preenchido na próxima partida, tipo fliperama de bar. */
 export function lastName(): string {
   try {
-    const v = (localStorage.getItem(NAME_KEY) ?? "").toUpperCase();
+    const v = (
+      localStorage.getItem(NAME_KEY) ??
+      localStorage.getItem("gui:snake-name") ?? // chave antiga, de antes do tetris
+      ""
+    ).toUpperCase();
     return INITIALS.test(v) ? v : "";
   } catch {
     return "";
@@ -78,23 +86,29 @@ function rememberName(id: string) {
   } catch {}
 }
 
-function readLocal(): Score[] {
+function readLocal(game: Game): Score[] {
   try {
-    const raw = JSON.parse(localStorage.getItem(LOCAL_KEY) ?? "[]");
+    const raw = JSON.parse(
+      localStorage.getItem(localKey(game)) ??
+        // o placar local do snake existia antes de virar por jogo
+        (game === "snake"
+          ? (localStorage.getItem("gui:scores") ?? "[]")
+          : "[]"),
+    );
     return Array.isArray(raw) ? raw : [];
   } catch {
     return [];
   }
 }
 
-function writeLocal(list: Score[]) {
+function writeLocal(game: Game, list: Score[]) {
   try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+    localStorage.setItem(localKey(game), JSON.stringify(list));
   } catch {}
 }
 
-function localBoard(id: string | null, isRecord = false): Board {
-  const sorted = rankBoard(readLocal());
+function localBoard(game: Game, id: string | null, isRecord = false): Board {
+  const sorted = rankBoard(readLocal(game));
   return {
     top: sorted.slice(0, TOP_N),
     rank: id ? positionOf(sorted, id) : null,
@@ -105,35 +119,39 @@ function localBoard(id: string | null, isRecord = false): Board {
 }
 
 // ── API ───────────────────────────────────────────────────
-export async function fetchBoard(): Promise<Board> {
+export async function fetchBoard(game: Game): Promise<Board> {
   try {
-    const r = await fetch("/api/scores", { cache: "no-store" });
+    const r = await fetch(`/api/scores?game=${game}`, { cache: "no-store" });
     if (!r.ok) throw new Error(String(r.status));
     return await r.json();
   } catch {
-    return localBoard(null);
+    return localBoard(game, null);
   }
 }
 
-export async function submitScore(name: string, score: number): Promise<Board> {
+export async function submitScore(
+  game: Game,
+  name: string,
+  score: number,
+): Promise<Board> {
   const id = name.trim().toUpperCase();
   rememberName(id); // guarda mesmo se a gravação falhar — é preferência local
   try {
     const r = await fetch("/api/scores", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: id, score }),
+      body: JSON.stringify({ game, name: id, score }),
     });
     if (!r.ok) throw new Error(String(r.status));
     return await r.json();
   } catch {
     const { list, isRecord } = upsert(
-      readLocal(),
+      readLocal(game),
       id,
       score,
       new Date().toISOString(),
     );
-    writeLocal(list);
-    return localBoard(id, isRecord);
+    writeLocal(game, list);
+    return localBoard(game, id, isRecord);
   }
 }

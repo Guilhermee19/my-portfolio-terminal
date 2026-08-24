@@ -12,9 +12,16 @@ npm test        # regras do placar do arcade
 
 ## O placar no VPS
 
-O `snake` grava na coleção `point-snake` do json-server (`minima-jsonsever`, pm2, porta 3ØØ4).
-A coleção já existe. Se um dia sumir, o json-server clássico **não recria via POST** — tem que
-voltar no `db.json` e reiniciar, senão a API responde 5Ø3 e o jogo cai no placar local.
+Cada jogo grava numa coleção do json-server (`minima-jsonsever`, pm2, porta 3ØØ4):
+`point-snake` e `point-tetris`. O json-server clássico **não cria coleção via POST** — se
+não existir no `db.json`, a API responde 5Ø3 e o jogo cai no placar local.
+
+```bash
+# criar uma coleção que falta (ex.: point-tetris)
+cd /root/projects/minima-jsonsever
+node -e 'const f="db.json",d=JSON.parse(require("fs").readFileSync(f));d["point-tetris"]??=[];require("fs").writeFileSync(f,JSON.stringify(d,null,2))'
+pm2 restart minima-jsonserver
+```
 
 ```bash
 # smoke test do CRUD, sem passar pelo app
@@ -41,7 +48,10 @@ curl -s -X DELETE $B/TST
 | `components/access-cards.tsx` | os 3 contadores de acesso no hero |
 | `lib/visits.ts` | regras do contador (agregação, poda) + id anônimo e cliente |
 | `app/api/visits/route.ts` | ponte pro json-server: valida o id, faz o upsert, devolve as métricas |
-| `components/snake.tsx` | o fliperama: jogo, seletor de código e placar |
+| `components/arcade.tsx` | o que os dois jogos compartilham: marquee, atração, game over, código, placar |
+| `components/snake.tsx` | a cobrinha |
+| `components/tetris.tsx` | os blocos, estilo Game Boy |
+| `lib/tetris.ts` | regras puras do tetris (rotação, colisão, wall kick, linhas, pontuação) |
 | `lib/scores.ts` | regras do placar (ranking, recorde) + cliente e fallback local |
 | `app/api/scores/route.ts` | ponte pro json-server: valida, faz o upsert e calcula a posição |
 | `app/not-found.tsx` | 404 de verdade, reaproveitando a tela do comando `404` |
@@ -133,26 +143,45 @@ Mapa `REFS`, mesma regra de lookup dos outros.
 
 Nada de diálogo copiado de filme: as respostas são escritas aqui, a graça é a piscadela.
 
-## O arcade (`snake`)
+## O arcade
 
-`snake` / `cobrinha` / `jogo` / `play` abre o gabinete em tela cheia; `scores` / `placar`
-mostra o top 1Ø sem jogar.
+Duas máquinas: `snake` / `cobrinha` e `tetris` / `blocos`. `arcade` lista as duas.
+`scores` mostra o topo das duas; `scores snake` / `scores tetris` abre o top 1Ø de uma.
 
-- Tabuleiro 28×20 de quadradinhos: a grade é `background`, só a cobra e a fruta viram nó
-  no DOM. Herda a cor do comando `theme`.
-- Setas ou WASD, `P` pausa, `ESC` sai. No celular, swipe no tabuleiro ou o d-pad.
-  A primeira fruta vem em linha reta de propósito — ensina o jogo sem tutorial.
-- Morreu com pontos: entra o seletor de código de **5 caracteres**. `↑↓` letra, `←→` slot,
-  digitar direto funciona, `_` é slot vazio e cai fora (dá pra usar de 1 a 5).
-- O código é o **id** no json-server: jogar de novo com o mesmo código só troca o recorde
-  se superar. Empate no placar desempata por quem chegou primeiro.
+**O que é comum aos dois** vive em `components/arcade.tsx`: o hook `useArcade(game)`
+(hi-score, o que acontece depois do game over, gravação) e as telas de marquee, atração,
+`GAME OVER`, seletor de código e placar. Cada jogo só cuida do próprio tabuleiro.
 
-Fluxo de gravação: browser → `/api/scores` → `{JSON_SERVER_URL}/point-snake`.
-A ponte existe porque o json-server é `http://` e o site é `https://` — chamada direta
-seria bloqueada por mixed content. Ela também valida o código (`^[A-Z0-9]{1,5}$`) e o
-teto de score antes de gravar.
+- Morreu com pontos: seletor de código de **5 caracteres**. `↑↓` letra, `←→` slot, digitar
+  direto funciona, `_` é slot vazio e cai fora (dá pra usar de 1 a 5).
+- O código é **compartilhado** entre os jogos (quem é `GUI19` no snake entra como `GUI19`
+  no tetris), mas o **placar é separado** — score de tetris não se compara com o de snake.
+- O código é o **id** no json-server: jogar de novo só troca o recorde se superar. Empate
+  desempata por quem chegou primeiro.
 
-Se a API cair, o jogo grava em `localStorage` (`gui:scores`) e mostra
+### Snake
+Tabuleiro 28×20. Setas ou WASD, `P` pausa, `ESC` sai; no celular, swipe ou d-pad.
+A primeira fruta vem em linha reta de propósito — ensina o jogo sem tutorial.
+
+### Tetris
+Do jeito que era no **Game Boy**: campo 1Ø×18, monocromático (cada peça é um tom do tema,
+com o quadradinho interno que o GB usava pra distinguir peça sem cor), **sem ghost, sem
+hold**, uma peça no next, sorteio burro e pontuação 4Ø/1ØØ/3ØØ/12ØØ × nível. Nível sobe a
+cada 1Ø linhas e a queda acelera.
+
+Duas concessões modernas: **hard drop** (espaço) e **wall kick** (girar encostado na parede
+empurra a peça pra dentro). `←→` move, `↓` desce, `↑`/`X` gira, `Z` gira ao contrário.
+No celular: swipe lateral move, swipe pra baixo derruba, toque gira — mais os botões.
+
+As regras ficam em `lib/tetris.ts`, sem React nem DOM, e é o que `npm test` cobre.
+
+### Gravação
+
+`browser → /api/scores?game=<jogo> → {JSON_SERVER_URL}/point-<jogo>`. A ponte existe porque
+o json-server é `http://` e o site é `https://` — chamada direta seria bloqueada por mixed
+content. Ela também valida o código (`^[A-Z0-9]{1,5}$`), o jogo e o teto de score.
+
+Se a API cair, grava em `localStorage` (`gui:scores:<jogo>`) e mostra
 `⚠ SERVIDOR INDISPONÍVEL · PLACAR LOCAL` — nunca quebra.
 
 **Limitação assumida:** o placar é público e sem autenticação, então dá pra forjar um POST.

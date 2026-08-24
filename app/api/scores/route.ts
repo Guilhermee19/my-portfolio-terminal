@@ -14,8 +14,16 @@ export const dynamic = "force-dynamic";
 
 /** O json-server é http://; este handler é a ponte, senão o browser bloquearia (mixed content). */
 const BASE = process.env.JSON_SERVER_URL ?? "http://62.171.172.35:3004";
-const RESOURCE = "/point-snake"; // a coleção no db.json do VPS
-const MAX_SCORE = 28 * 20 * 10; // teto do tabuleiro: nem a partida perfeita passa disso
+
+/** Um placar por jogo. `max` é o teto de sanidade: barra valor absurdo, não fraude. */
+const GAMES = {
+  snake: { resource: "/point-snake", max: 28 * 20 * 10 },
+  tetris: { resource: "/point-tetris", max: 999_999 },
+} as const;
+
+type GameKey = keyof typeof GAMES;
+const isGame = (v: unknown): v is GameKey =>
+  typeof v === "string" && v in GAMES;
 
 const req = (path: string, init?: RequestInit) =>
   fetch(`${BASE}${path}`, {
@@ -25,11 +33,18 @@ const req = (path: string, init?: RequestInit) =>
     headers: { "content-type": "application/json", ...init?.headers },
   });
 
-async function all(): Promise<Score[]> {
-  const r = await req(RESOURCE);
-  if (!r.ok) throw new Error(`json-server ${RESOURCE}: ${r.status}`);
+async function all(game: GameKey): Promise<Score[]> {
+  const resource = GAMES[game].resource;
+  const r = await req(resource);
+  if (!r.ok) throw new Error(`json-server ${resource}: ${r.status}`);
   return r.json();
 }
+
+const badGame = () =>
+  NextResponse.json(
+    { error: `game deve ser ${Object.keys(GAMES).join(" ou ")}` },
+    { status: 400 },
+  );
 
 function board(list: Score[], id: string | null, isRecord: boolean): Board {
   const sorted = rankBoard(list);
@@ -42,9 +57,11 @@ function board(list: Score[], id: string | null, isRecord: boolean): Board {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const game = new URL(request.url).searchParams.get("game");
+  if (!isGame(game)) return badGame();
   try {
-    return NextResponse.json(board(await all(), null, false));
+    return NextResponse.json(board(await all(game), null, false));
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 503 });
   }
@@ -58,7 +75,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "json inválido" }, { status: 400 });
   }
 
-  const { name, score } = (body ?? {}) as { name?: unknown; score?: unknown };
+  const { game, name, score } = (body ?? {}) as {
+    game?: unknown;
+    name?: unknown;
+    score?: unknown;
+  };
+  if (!isGame(game)) return badGame();
+
   const id = String(name ?? "")
     .trim()
     .toUpperCase();
@@ -69,18 +92,20 @@ export async function POST(request: Request) {
       { status: 400 },
     );
 
+  const max = GAMES[game].max;
   if (
     !Number.isInteger(score) ||
     (score as number) < 0 ||
-    (score as number) > MAX_SCORE
+    (score as number) > max
   )
     return NextResponse.json(
-      { error: `score fora do intervalo Ø..${MAX_SCORE}` },
+      { error: `score fora do intervalo Ø..${max}` },
       { status: 400 },
     );
 
   try {
-    const list = await all();
+    const list = await all(game);
+    const RESOURCE = GAMES[game].resource;
     const { entry, isRecord } = upsert(
       list,
       id,
