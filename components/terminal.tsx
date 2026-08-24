@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { profile, projects, stack, THEMES } from "@/lib/data";
 import { INSTALLERS, install, SHELL, type Line } from "@/lib/commands";
+import { fetchBoard, type Board } from "@/lib/scores";
+import Snake from "@/components/snake";
 
 type Fx = null | "404" | "bug";
 
@@ -20,20 +22,35 @@ const FULL_LIST: Line[] = [
   { t: "privilégios elevados · todos os comandos revelados", k: "ok" },
   { t: "" },
   { t: "SESSÃO", k: "hi" },
-  { t: "  help · clear · exit · reset · reboot · history · history clear", k: "dim" },
-  { t: "  su · sudo su · logout · theme <verde|ambar|ciano|magenta|sangue|mono>", k: "dim" },
+  {
+    t: "  help · clear · exit · reset · reboot · history · history clear",
+    k: "dim",
+  },
+  {
+    t: "  su · sudo su · logout · theme <verde|ambar|ciano|magenta|sangue|mono>",
+    k: "dim",
+  },
   { t: "  projetos · contato · date · whoami · id · groups", k: "dim" },
   { t: "" },
   { t: "ARQUIVOS E NAVEGAÇÃO", k: "hi" },
-  { t: "  ls · cat <arq> · pwd · cd · find · which · grep · man · echo", k: "dim" },
-  { t: "  mkdir · touch · mv · cp · chown  (tudo somente leitura, claro)", k: "dim" },
+  {
+    t: "  ls · cat <arq> · pwd · cd · find · which · grep · man · echo",
+    k: "dim",
+  },
+  {
+    t: "  mkdir · touch · mv · cp · chown  (tudo somente leitura, claro)",
+    k: "dim",
+  },
   { t: "" },
   { t: "SISTEMA", k: "hi" },
   { t: "  uname -a · neofetch · uptime · top · htop · ps aux", k: "dim" },
   { t: "  df -h · free -h · kill · shutdown · mount", k: "dim" },
   { t: "" },
   { t: "REDE", k: "hi" },
-  { t: "  ip a · ifconfig · netstat · ss · traceroute · ping · ssh · curl · wget", k: "dim" },
+  {
+    t: "  ip a · ifconfig · netstat · ss · traceroute · ping · ssh · curl · wget",
+    k: "dim",
+  },
   { t: "" },
   { t: "SERVIDOR", k: "hi" },
   { t: "  systemctl · nginx -t · journalctl · crontab -l", k: "dim" },
@@ -41,17 +58,33 @@ const FULL_LIST: Line[] = [
   { t: "" },
   { t: "INSTALAÇÃO  (aceita pacote: `npm i three`)", k: "hi" },
   { t: "  npm · pnpm · yarn · bun · pip · apt · apt-get · brew", k: "dim" },
-  { t: "  cargo · composer · gem · go   +  apt update · apt upgrade", k: "dim" },
+  {
+    t: "  cargo · composer · gem · go   +  apt update · apt upgrade",
+    k: "dim",
+  },
   { t: "" },
   { t: "VERSÕES E EDITORES", k: "hi" },
   { t: "  node -v · npm -v · python --version · git --version", k: "dim" },
   { t: "  vim · nano · emacs · code .", k: "dim" },
   { t: "" },
   { t: "GIT", k: "hi" },
-  { t: "  git status · git log · git commit · git blame · git push --force", k: "dim" },
+  {
+    t: "  git status · git log · git commit · git blame · git push --force",
+    k: "dim",
+  },
+  { t: "" },
+  { t: "ARCADE", k: "hi" },
+  {
+    t: "  snake · cobrinha · jogo · play   →  3 iniciais, placar online",
+    k: "dim",
+  },
+  { t: "  scores · placar · highscores     →  top 1Ø sem jogar", k: "dim" },
   { t: "" },
   { t: "CLÁSSICOS", k: "hi" },
-  { t: "  hello world · konami · matrix · hack · coffee · sudo · rm · vim · python", k: "dim" },
+  {
+    t: "  hello world · konami · matrix · hack · coffee · sudo · rm · vim · python",
+    k: "dim",
+  },
   { t: "" },
   { t: "TELAS CHEIAS", k: "hi" },
   { t: "  404 · bug", k: "dim" },
@@ -60,7 +93,10 @@ const FULL_LIST: Line[] = [
   { t: "  marvel · jarvis", k: "dim" },
   { t: "" },
   { t: "FRONT-END", k: "hi" },
-  { t: "  !important · z-index · center · flex · npm install · yarn", k: "dim" },
+  {
+    t: "  !important · z-index · center · flex · npm install · yarn",
+    k: "dim",
+  },
   { t: "  undefined · nan · console.log · hydration", k: "dim" },
   { t: "" },
   { t: "BACK-END", k: "hi" },
@@ -71,7 +107,10 @@ const FULL_LIST: Line[] = [
   { t: "  stackoverflow · so · tabs · spaces", k: "dim" },
   { t: "" },
   { t: "ARQUIVOS (use com `cat`)", k: "hi" },
-  { t: "  sobre.txt · stack.cfg · projetos.json · contato.md · .segredo", k: "dim" },
+  {
+    t: "  sobre.txt · stack.cfg · projetos.json · contato.md · .segredo",
+    k: "dim",
+  },
 ];
 
 const FILES: Record<string, Line[]> = {
@@ -113,34 +152,45 @@ const FILES: Record<string, Line[]> = {
       t: "   back:  sql · docker · k8s · cache · regex · deploy · env · chmod · vim",
       k: "hi",
     },
-    { t: "   e ainda: git · stackoverflow · tabs · python · 500 · coffee · sudo", k: "hi" },
+    {
+      t: "   e ainda: git · stackoverflow · tabs · python · 500 · coffee · sudo",
+      k: "hi",
+    },
   ],
 };
 
 const HELP: Line[] = [
   { t: "COMANDOS DISPONÍVEIS", k: "hi" },
   { t: "  help ............ esta lista" },
+  { t: "  snake ........... o fliperama. tem placar online.", k: "hi" },
+  { t: "  scores .......... top 1Ø do placar" },
   { t: "  hello world ..... o primeiro programa de todo mundo" },
   { t: "  ls / cat <arq> .. sistema de arquivos" },
   { t: "  reset ........... reinicia tudo, boot incluído" },
   { t: "  (funciona a maior parte do que você digitaria num shell:" },
-  { t: "   pwd, uname -a, top, df -h, npm i <pkg>, systemctl, git status...)", k: "dim" },
+  {
+    t: "   pwd, uname -a, top, df -h, npm i <pkg>, systemctl, git status...)",
+    k: "dim",
+  },
   { t: "  whoami .......... quem está falando" },
   { t: "  history ......... ↑↓ percorrem, e fica salvo entre visitas" },
   { t: "  theme <cor> ..... repinta o sistema (theme list)" },
   { t: "  projetos ........ índice de projetos" },
   { t: "  contato ......... abrir canal" },
   { t: "  clear / exit .... limpar / fechar" },
-  { t: "  iamgui login .... acesso root — revela TODOS os comandos (pede senha)", k: "hi" },
+  {
+    t: "  iamgui login .... acesso root — revela TODOS os comandos (pede senha)",
+    k: "hi",
+  },
   { t: "  ...ou vá catando pistas em `cat .segredo`", k: "dim" },
 ];
 
 const HELLO: Line[] = [
-  { t: "  C ......... printf(\"Hello, World!\\n\");", k: "dim" },
-  { t: "  PYTHON .... print(\"Hello, World!\")", k: "dim" },
-  { t: "  JS ........ console.log(\"Hello, World!\")", k: "dim" },
-  { t: "  PHP ....... <?php echo \"Hello, World!\"; ?>", k: "dim" },
-  { t: "  RUST ...... println!(\"Hello, World!\");", k: "dim" },
+  { t: '  C ......... printf("Hello, World!\\n");', k: "dim" },
+  { t: '  PYTHON .... print("Hello, World!")', k: "dim" },
+  { t: '  JS ........ console.log("Hello, World!")', k: "dim" },
+  { t: '  PHP ....... <?php echo "Hello, World!"; ?>', k: "dim" },
+  { t: '  RUST ...... println!("Hello, World!");', k: "dim" },
   { t: "─────────────────────────────────────────", k: "dim" },
   { t: "Hello, World!", k: "hi" },
   { t: "> todo mundo começou aqui. inclusive quem hoje discute", k: "ok" },
@@ -156,10 +206,16 @@ const QUIPS: Record<string, Line[]> = {
   ],
   "z-index": [
     { t: "z-index: 9999;", k: "ok" },
-    { t: "...e o modal continua atrás. bem-vindo ao stacking context.", k: "dim" },
+    {
+      t: "...e o modal continua atrás. bem-vindo ao stacking context.",
+      k: "dim",
+    },
   ],
   center: [
-    { t: "display: flex; align-items: center; justify-content: center;", k: "ok" },
+    {
+      t: "display: flex; align-items: center; justify-content: center;",
+      k: "ok",
+    },
     { t: "uma geração inteira sofreu antes disso existir.", k: "dim" },
   ],
   npm: [
@@ -278,6 +334,29 @@ Object.assign(QUIPS, {
   log: QUIPS["console.log"],
 });
 
+/** Top 10 do arcade formatado como saída de terminal. */
+function boardLines(b: Board): Line[] {
+  if (!b.top.length)
+    return [{ t: "placar vazio. digite `snake` e seja o primeiro.", k: "dim" }];
+  return [
+    { t: "HIGH SCORES · GUI-ARCADE / SNAKE", k: "hi" },
+    ...(b.offline
+      ? [
+          {
+            t: "⚠ servidor indisponível — mostrando o placar local",
+            k: "err" as const,
+          },
+        ]
+      : []),
+    ...b.top.map((s, i) => ({
+      t: `  ${String(i + 1).padStart(2, " ")}. ${s.name}  ${".".repeat(
+        20,
+      )}  ${String(s.score).padStart(5, "Ø")}`,
+      k: (i === 0 ? "ok" : "dim") as Line["k"],
+    })),
+  ];
+}
+
 /** Histórico de comandos entre visitas — é o que as setas ↑↓ percorrem. */
 const HIST_KEY = "gui:hist";
 const HIST_MAX = 60;
@@ -305,6 +384,9 @@ export default function Terminal() {
   const [fx, setFx] = useState<Fx>(null);
   const [askPass, setAskPass] = useState(false);
   const [root, setRoot] = useState(false);
+  const [game, setGame] = useState<null | "snake">(null);
+  const gameRef = useRef<null | "snake">(null);
+  gameRef.current = game; // o listener global de `~` lê isto sem re-registrar
   const hist = useRef<string[]>([]);
   const histIdx = useRef(-1);
   const timers = useRef<number[]>([]);
@@ -395,6 +477,7 @@ export default function Terminal() {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+      if (gameRef.current) return; // durante o jogo o teclado é dele
       if (e.key === "~" || e.key === "`") {
         e.preventDefault();
         setOpen((v) => !v);
@@ -497,6 +580,24 @@ export default function Terminal() {
       case "sair":
         return setOpen(false);
 
+      // ── arcade ──────────────────────────────────────────
+      case "snake":
+      case "cobrinha":
+      case "jogo":
+      case "play":
+        push([
+          { t: "carregando GUI-ARCADE · SNAKE", k: "hi" },
+          { t: "ESC volta pro terminal.", k: "dim" },
+        ]);
+        return setGame("snake");
+
+      case "scores":
+      case "placar":
+      case "highscores":
+        push([{ t: "consultando placar...", k: "dim" }]);
+        void fetchBoard().then((b) => push(boardLines(b)));
+        return;
+
       // ── shell: navegação e arquivos (tudo somente leitura) ──
       case "pwd":
         return push([{ t: "/home/gui/portfolio", k: "ok" }]);
@@ -549,7 +650,10 @@ export default function Terminal() {
         return stream([
           { t: `ssh: conectando em ${arg || "servidor"}...`, k: "dim" },
           { t: "Permission denied (publickey).", k: "err" },
-          { t: "sua chave não está no authorized_keys. como sempre.", k: "dim" },
+          {
+            t: "sua chave não está no authorized_keys. como sempre.",
+            k: "dim",
+          },
         ]);
 
       case "curl":
@@ -557,7 +661,7 @@ export default function Terminal() {
         return stream([
           { t: `--> GET ${arg || "https://iamgui.dev"}`, k: "dim" },
           { t: "HTTP/2 2ØØ · content-type: text/html · 14.2 kB", k: "ok" },
-          { t: "<!doctype html><html lang=\"pt-BR\">...", k: "dim" },
+          { t: '<!doctype html><html lang="pt-BR">...', k: "dim" },
         ]);
 
       case "kill":
@@ -576,7 +680,13 @@ export default function Terminal() {
       case "reboot":
         stream(
           [
-            { t: c === "reboot" ? "reiniciando o sistema..." : "resetando terminal...", k: "err" },
+            {
+              t:
+                c === "reboot"
+                  ? "reiniciando o sistema..."
+                  : "resetando terminal...",
+              k: "err",
+            },
             { t: "desmontando /home/gui .......... [  OK  ]", k: "dim" },
             { t: "encerrando sessão .............. [  OK  ]", k: "dim" },
           ],
@@ -813,7 +923,10 @@ export default function Terminal() {
     push([{ t: `${ps1} ${raw}` }]);
     if (raw.trim()) {
       // sem repetir o comando anterior, igual bash com HISTCONTROL=ignoredups
-      const dedup = hist.current[0] === raw.trim() ? hist.current : [raw.trim(), ...hist.current];
+      const dedup =
+        hist.current[0] === raw.trim()
+          ? hist.current
+          : [raw.trim(), ...hist.current];
       hist.current = dedup.slice(0, HIST_MAX);
       histIdx.current = -1;
       saveHist(hist.current);
@@ -954,6 +1067,27 @@ export default function Terminal() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {game === "snake" && (
+        <Snake
+          onExit={(r) => {
+            setGame(null);
+            push([
+              { t: "partida encerrada.", k: "hi" },
+              {
+                t: `SCORE ${String(r.score).padStart(5, "Ø")}${
+                  r.name ? ` · ${r.name}` : ""
+                }${r.rank ? ` · posição #${r.rank}` : ""}`,
+                k: "ok",
+              },
+              {
+                t: "`snake` joga de novo · `scores` mostra o placar",
+                k: "dim",
+              },
+            ]);
+          }}
+        />
+      )}
 
       <FxScreen fx={fx} />
     </>

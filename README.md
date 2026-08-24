@@ -7,6 +7,21 @@ Next.js 16 (App Router, render no servidor) + Tailwind v4 + Motion.
 npm run dev     # http://localhost:3000
 npm run build
 npm start
+npm test        # regras do placar do arcade
+```
+
+## ⚠ Pré-requisito do placar (uma vez, no VPS)
+
+O `snake` grava no json-server que roda em `minima-jsonsever`. O json-server clássico
+**não cria coleção nova via POST** — enquanto `points-snake` não existir no `db.json`,
+a API responde 5Ø3 e o jogo cai no placar local.
+
+```bash
+cd /root/projects/minima-jsonsever
+cp db.json db.json.bak
+node -e 'const f="db.json",d=JSON.parse(require("fs").readFileSync(f));d["points-snake"]??=[];require("fs").writeFileSync(f,JSON.stringify(d,null,2))'
+pm2 restart minima-jsonserver
+curl -s http://127.0.0.1:3004/points-snake   # tem que responder []
 ```
 
 ## Estrutura
@@ -20,6 +35,9 @@ npm start
 | `components/hud.tsx` | barra superior, barra inferior e trilhos laterais |
 | `components/reveal.tsx` | entrada no scroll + texto que decodifica |
 | `components/terminal.tsx` | o easter egg: console, comandos, piadas e as telas de 404 / bug |
+| `components/snake.tsx` | o fliperama: jogo, seletor de código e placar |
+| `lib/scores.ts` | regras do placar (ranking, recorde) + cliente e fallback local |
+| `app/api/scores/route.ts` | ponte pro json-server: valida, faz o upsert e calcula a posição |
 | `app/not-found.tsx` | 404 de verdade, reaproveitando a tela do comando `404` |
 
 Para editar o portfólio, mexa em `lib/data.ts` — o resto é chrome.
@@ -62,6 +80,31 @@ Pra parecer um terminal de verdade, não só um menu:
 
 Saída fixa vai no mapa `SHELL`; o que precisa do argumento (instaladores, `echo`, `ssh`…)
 está no `switch` do `run()` em `terminal.tsx`.
+
+## O arcade (`snake`)
+
+`snake` / `cobrinha` / `jogo` / `play` abre o gabinete em tela cheia; `scores` / `placar`
+mostra o top 1Ø sem jogar.
+
+- Tabuleiro 28×20 de quadradinhos: a grade é `background`, só a cobra e a fruta viram nó
+  no DOM. Herda a cor do comando `theme`.
+- Setas ou WASD, `P` pausa, `ESC` sai. No celular, swipe no tabuleiro ou o d-pad.
+  A primeira fruta vem em linha reta de propósito — ensina o jogo sem tutorial.
+- Morreu com pontos: entra o seletor de código de **5 caracteres**. `↑↓` letra, `←→` slot,
+  digitar direto funciona, `_` é slot vazio e cai fora (dá pra usar de 1 a 5).
+- O código é o **id** no json-server: jogar de novo com o mesmo código só troca o recorde
+  se superar. Empate no placar desempata por quem chegou primeiro.
+
+Fluxo de gravação: browser → `/api/scores` → `{JSON_SERVER_URL}/points-snake`.
+A ponte existe porque o json-server é `http://` e o site é `https://` — chamada direta
+seria bloqueada por mixed content. Ela também valida o código (`^[A-Z0-9]{1,5}$`) e o
+teto de score antes de gravar.
+
+Se a API cair, o jogo grava em `localStorage` (`gui:scores`) e mostra
+`⚠ SERVIDOR INDISPONÍVEL · PLACAR LOCAL` — nunca quebra.
+
+**Limitação assumida:** o placar é público e sem autenticação, então dá pra forjar um POST.
+A validação barra lixo, não fraude. Autenticar um easter egg não se paga.
 
 ## Detalhes
 
