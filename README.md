@@ -38,6 +38,9 @@ curl -s -X DELETE $B/TST
 | `components/hud.tsx` | barra superior, barra inferior e trilhos laterais |
 | `components/reveal.tsx` | entrada no scroll + texto que decodifica |
 | `components/terminal.tsx` | o easter egg: console, comandos, piadas e as telas de 404 / bug |
+| `components/access-cards.tsx` | os 3 contadores de acesso no hero |
+| `lib/visits.ts` | regras do contador (agregação, poda) + id anônimo e cliente |
+| `app/api/visits/route.ts` | ponte pro json-server: valida o id, faz o upsert, devolve as métricas |
 | `components/snake.tsx` | o fliperama: jogo, seletor de código e placar |
 | `lib/scores.ts` | regras do placar (ranking, recorde) + cliente e fallback local |
 | `app/api/scores/route.ts` | ponte pro json-server: valida, faz o upsert e calcula a posição |
@@ -45,6 +48,27 @@ curl -s -X DELETE $B/TST
 
 Para editar o portfólio, mexa em `lib/data.ts` — o resto é chrome.
 Para editar/adicionar comandos, é o mapa `QUIPS` (piadas) ou o `switch` do `run()` em `terminal.tsx`.
+
+## Contador de acessos
+
+Os 3 cards do hero (`ACESSOS` / `SEMANA` / `ÚNICOS`) vêm da coleção `visits` do mesmo
+json-server, pela ponte `/api/visits`.
+
+**Um registro por visitante, não por acesso** — o json-server devolve a coleção inteira no GET,
+então um registro por acesso cresceria sem teto. Cada registro guarda `count`, `first`, `last` e
+um `days: { "2026-08-24": 2 }` podado para 14 dias. Daí saem as três métricas: total é a soma dos
+`count`, semana é a soma dos `days` dos últimos 7 dias, únicos é a quantidade de registros.
+
+- **1 acesso por sessão** (`sessionStorage`): F5 não conta, e isso também neutraliza o efeito
+  duplo do StrictMode.
+- **Identificação anônima**: um id aleatório em `localStorage` (`gui:vid`). Sem IP, sem
+  user-agent, sem fingerprint.
+- **Não conta em localhost** — pra testar em dev: `localStorage.setItem("gui:count-local","1")`.
+- Se a API cair, os cards mostram `----` e o hero segue normal.
+
+Limitações: endpoint público sem auth (dá pra forjar POST), a contagem é por navegador (limpar o
+storage vira um "único" novo) e quem bloqueia JS não é contado — bots que não executam script
+também não, o que aqui é a favor.
 
 ## O terminal
 

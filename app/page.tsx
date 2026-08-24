@@ -7,6 +7,7 @@ import {
   OpenTerminalButton,
 } from "@/components/hud";
 import { Reveal, Scramble } from "@/components/reveal";
+import AccessCards from "@/components/access-cards";
 import {
   profile,
   stats,
@@ -124,19 +125,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              {stack.slice(0, 6).map((s) => (
-                <div
-                  key={s.name}
-                  className="border border-grn/25 px-2 py-2 text-center"
-                >
-                  <div className="text-[9px] text-grn/60">{s.tag}</div>
-                  <div className="mt-1 text-[10px] text-grn-2">
-                    {s.level > 85 ? "SET" : "SYNC"}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AccessCards />
 
             <div className="hidden grid-cols-2 gap-3 lg:grid">
               <div className="panel px-3 py-2 text-[9px] leading-4 text-grn/40">
