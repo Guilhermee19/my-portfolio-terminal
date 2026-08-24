@@ -588,9 +588,9 @@ export default function Terminal() {
     const sys = SHELL[full] ?? SHELL[c];
     if (sys) return stream(sys, sys.length > 6 ? 90 : 200);
 
-    // referências geek e IAs
+    // referências geek e IAs — desenho grande sai rápido, resposta curta tem ritmo
     const ref = REFS[full] ?? REFS[c];
-    if (ref) return stream(ref, 240);
+    if (ref) return stream(ref, ref.length > 8 ? 70 : 240);
 
     // piadas de dev: mesma regra de lookup
     const quip = QUIPS[full] ?? QUIPS[c];
