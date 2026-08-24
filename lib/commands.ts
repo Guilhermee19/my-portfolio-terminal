@@ -27,18 +27,32 @@ export const SHELL: Record<string, Line[]> = {
     { t: "                      Memory ..... 6.4GB / 8GB (Chrome)", k: "ok" },
   ],
   uptime: [
-    { t: " 19:07:14  up 7 anos, 2 meses,  1 user,  load average: Ø.42, 1.13, 3.47", k: "ok" },
+    {
+      t: " 19:07:14  up 7 anos, 2 meses,  1 user,  load average: Ø.42, 1.13, 3.47",
+      k: "ok",
+    },
     { t: "o load das 3h da manhã ainda pesa na média.", k: "dim" },
   ],
   id: [
-    { t: "uid=1998(gui) gid=1ØØ(front-end) grupos=1ØØ(front-end),27(sudo),42(rpg)", k: "ok" },
+    {
+      t: "uid=1998(gui) gid=1ØØ(front-end) grupos=1ØØ(front-end),27(sudo),42(rpg)",
+      k: "ok",
+    },
   ],
-  groups: [{ t: "front-end sudo rpg cafeinados devs-que-leem-o-console", k: "ok" }],
+  groups: [
+    { t: "front-end sudo rpg cafeinados devs-que-leem-o-console", k: "ok" },
+  ],
   "df -h": [
     { t: "Sist. Arq.      Tam.  Usado  Disp. Uso% Montado em", k: "hi" },
     { t: "/dev/gui1       512G   187G   325G  37% /", k: "dim" },
-    { t: "/dev/projetos    64G    58G   6.ØG  91% /home/gui/projetos", k: "dim" },
-    { t: "node_modules    1.2T   1.2T      Ø 1ØØ% /home/gui/node_modules", k: "err" },
+    {
+      t: "/dev/projetos    64G    58G   6.ØG  91% /home/gui/projetos",
+      k: "dim",
+    },
+    {
+      t: "node_modules    1.2T   1.2T      Ø 1ØØ% /home/gui/node_modules",
+      k: "err",
+    },
   ],
   "free -h": [
     { t: "               total     usado     livre   buff/cache", k: "hi" },
@@ -65,7 +79,30 @@ export const SHELL: Record<string, Line[]> = {
   "ip a": [
     { t: "1: lo: <LOOPBACK,UP> inet 127.Ø.Ø.1/8", k: "dim" },
     { t: "2: eth0: <BROADCAST,UP> inet 1Ø.Ø.Ø.42/24", k: "dim" },
-    { t: "3: tun0: <POINTOPOINT,UP> inet 1Ø.8.Ø.7/24  # a VPN do cliente", k: "dim" },
+    {
+      t: "3: tun0: <POINTOPOINT,UP> inet 1Ø.8.Ø.7/24  # a VPN do cliente",
+      k: "dim",
+    },
+  ],
+  ipconfig: [
+    { t: "Configuração de IP do Windows", k: "hi" },
+    { t: "" },
+    { t: "Adaptador Ethernet SCHR-NET:", k: "ok" },
+    { t: "   Sufixo DNS específico de conexão. : iamgui.dev", k: "dim" },
+    { t: "   Endereço IPv4. . . . . . . . . . : 1Ø.Ø.Ø.42", k: "dim" },
+    { t: "   Máscara de Sub-rede. . . . . . . : 255.255.255.Ø", k: "dim" },
+    { t: "   Gateway Padrão . . . . . . . . . : 1Ø.Ø.Ø.1", k: "dim" },
+    { t: "" },
+    { t: "Adaptador de Rede sem Fio Wi-Fi:", k: "ok" },
+    { t: "   Estado da mídia. . . . . . . . . : mídia desconectada", k: "err" },
+    { t: "   (o cabo nunca falha. o wi-fi do escritório, sempre)", k: "dim" },
+    { t: "" },
+    { t: "Adaptador de Túnel VPN-CLIENTE:", k: "ok" },
+    { t: "   Endereço IPv4. . . . . . . . . . : 1Ø.8.Ø.7", k: "dim" },
+    {
+      t: "   Expira em. . . . . . . . . . . . : quando você mais precisar",
+      k: "dim",
+    },
   ],
   netstat: [
     { t: "Proto  Endereço local     Estado    Programa", k: "hi" },
@@ -73,7 +110,10 @@ export const SHELL: Record<string, Line[]> = {
     { t: "tcp    Ø.Ø.Ø.Ø:42ØØ       LISTEN    ng serve", k: "ok" },
     { t: "tcp    Ø.Ø.Ø.Ø:8ØØØ       LISTEN    manage.py runserver", k: "ok" },
     { t: "tcp    Ø.Ø.Ø.Ø:5432       LISTEN    postgres", k: "ok" },
-    { t: "tcp    Ø.Ø.Ø.Ø:3ØØ1       LISTEN    aquele projeto que você esqueceu", k: "err" },
+    {
+      t: "tcp    Ø.Ø.Ø.Ø:3ØØ1       LISTEN    aquele projeto que você esqueceu",
+      k: "err",
+    },
   ],
   traceroute: [
     { t: "1  roteador-de-casa (192.168.Ø.1)        1.2 ms", k: "dim" },
@@ -87,18 +127,33 @@ export const SHELL: Record<string, Line[]> = {
     { t: "  portfolio.service    loaded active  Portfólio do Gui", k: "ok" },
     { t: "  nginx.service        loaded active  Servidor web", k: "ok" },
     { t: "  postgres.service     loaded active  Banco de dados", k: "ok" },
-    { t: "  cafeteira.service    loaded failed  Cafeteira (crítico)", k: "err" },
+    {
+      t: "  cafeteira.service    loaded failed  Cafeteira (crítico)",
+      k: "err",
+    },
   ],
   "nginx -t": [
-    { t: "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok", k: "ok" },
-    { t: "nginx: configuration file /etc/nginx/nginx.conf test is successful", k: "ok" },
+    {
+      t: "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok",
+      k: "ok",
+    },
+    {
+      t: "nginx: configuration file /etc/nginx/nginx.conf test is successful",
+      k: "ok",
+    },
     { t: "primeira vez que passa de primeira. anota a data.", k: "dim" },
   ],
   journalctl: [
     { t: "ago 24 Ø3:47:Ø2 unit-sr-a next[42Ø]: compilado em 1.2s", k: "dim" },
-    { t: "ago 24 Ø3:47:Ø9 unit-sr-a next[42Ø]: hydration mismatch em /", k: "err" },
+    {
+      t: "ago 24 Ø3:47:Ø9 unit-sr-a next[42Ø]: hydration mismatch em /",
+      k: "err",
+    },
     { t: "ago 24 Ø3:52:11 unit-sr-a gui[1]: 'ah não'", k: "err" },
-    { t: "ago 24 Ø4:1Ø:33 unit-sr-a gui[1]: resolvido. era new Date().", k: "ok" },
+    {
+      t: "ago 24 Ø4:1Ø:33 unit-sr-a gui[1]: resolvido. era new Date().",
+      k: "ok",
+    },
   ],
   "crontab -l": [
     { t: "Ø 3 * * *   npm run build   # ninguém sabe por que às 3h", k: "dim" },
@@ -112,10 +167,16 @@ export const SHELL: Record<string, Line[]> = {
     { t: "i9j0k1l2    redis:7          Restarting (1)  6379->6379", k: "err" },
   ],
   "kubectl get pods": [
-    { t: "NAME                        READY  STATUS             RESTARTS", k: "hi" },
+    {
+      t: "NAME                        READY  STATUS             RESTARTS",
+      k: "hi",
+    },
     { t: "portfolio-7d4b9c-x2k9p      1/1    Running            Ø", k: "ok" },
     { t: "api-5f8c2a-mn4qw            1/1    Running            2", k: "ok" },
-    { t: "cache-3a7e1b-pp8zz          Ø/1    CrashLoopBackOff   247", k: "err" },
+    {
+      t: "cache-3a7e1b-pp8zz          Ø/1    CrashLoopBackOff   247",
+      k: "err",
+    },
   ],
   // ── versões ─────────────────────────────────────────────
   "node -v": [{ t: "v22.22.3", k: "ok" }],
@@ -126,7 +187,10 @@ export const SHELL: Record<string, Line[]> = {
   "git status": [
     { t: "On branch main", k: "ok" },
     { t: "Changes not staged for commit:", k: "hi" },
-    { t: "  modified:   src/components/aquilo-que-eu-ia-refatorar.tsx", k: "err" },
+    {
+      t: "  modified:   src/components/aquilo-que-eu-ia-refatorar.tsx",
+      k: "err",
+    },
     { t: "  modified:   TODO.md", k: "err" },
     { t: "Untracked files:", k: "hi" },
     { t: "  teste-final-2-AGORA-VAI.tsx", k: "err" },
@@ -139,17 +203,26 @@ export const SHELL: Record<string, Line[]> = {
   ],
   "git commit": [
     { t: 'git commit -m "ajustes"', k: "dim" },
-    { t: "a mensagem de commit mais honesta e mais inútil já escrita.", k: "dim" },
+    {
+      t: "a mensagem de commit mais honesta e mais inútil já escrita.",
+      k: "dim",
+    },
   ],
   // ── editores ────────────────────────────────────────────
   nano: [
     { t: "GNU nano 8.1", k: "ok" },
-    { t: "^X Sair  ^O Gravar  — sim, aqui as teclas ficam escritas na tela.", k: "dim" },
+    {
+      t: "^X Sair  ^O Gravar  — sim, aqui as teclas ficam escritas na tela.",
+      k: "dim",
+    },
     { t: "é por isso que você usa nano e diz que usa vim.", k: "dim" },
   ],
   emacs: [
     { t: "carregando emacs...", k: "dim" },
-    { t: "um ótimo sistema operacional. faltou um editor de texto decente.", k: "ok" },
+    {
+      t: "um ótimo sistema operacional. faltou um editor de texto decente.",
+      k: "ok",
+    },
   ],
   "code .": [
     { t: "abrindo VS Code no diretório atual...", k: "ok" },
@@ -159,10 +232,6 @@ export const SHELL: Record<string, Line[]> = {
   "kill -9": [
     { t: "kill: falta o PID.", k: "err" },
     { t: "e -9 não é gentil. mas funciona.", k: "dim" },
-  ],
-  shutdown: [
-    { t: "shutdown: você não pode desligar o portfólio de alguém.", k: "err" },
-    { t: "tenta `reset`.", k: "dim" },
   ],
   mount: [{ t: RO, k: "err" }],
 };
@@ -191,9 +260,8 @@ Object.assign(SHELL, {
   "git log --oneline": SHELL["git log"],
   code: SHELL["code ."],
   vi: SHELL.nano,
-  poweroff: SHELL.shutdown,
-  halt: SHELL.shutdown,
   umount: SHELL.mount,
+  "ipconfig /all": SHELL.ipconfig,
 });
 
 /** Gerenciadores de pacote reconhecidos → subcomandos que contam como instalar. */
@@ -223,10 +291,19 @@ const VERSION = (pkg: string) => {
 export function install(mgr: string, verb: string, pkg: string): Line[] {
   if (verb === "update")
     return [
-      { t: "Obtendo:1 http://deb.schr-os.org stable InRelease [12.4 kB]", k: "dim" },
-      { t: "Obtendo:2 http://deb.schr-os.org stable/main amd64 [8.7 MB]", k: "dim" },
+      {
+        t: "Obtendo:1 http://deb.schr-os.org stable InRelease [12.4 kB]",
+        k: "dim",
+      },
+      {
+        t: "Obtendo:2 http://deb.schr-os.org stable/main amd64 [8.7 MB]",
+        k: "dim",
+      },
       { t: "Baixados 8.7 MB em 2s (4.1 MB/s)", k: "ok" },
-      { t: "417 pacotes podem ser atualizados. você vai ignorar todos.", k: "dim" },
+      {
+        t: "417 pacotes podem ser atualizados. você vai ignorar todos.",
+        k: "dim",
+      },
     ];
 
   if (verb === "upgrade")
@@ -252,6 +329,9 @@ export function install(mgr: string, verb: string, pkg: string): Line[] {
     { t: `+ ${pkg}@${v}`, k: "ok" },
     { t: `adicionado 1 pacote e auditados 428 pacotes em 3s`, k: "ok" },
     { t: "147 vulnerabilidades (3 baixas, 144 críticas)", k: "err" },
-    { t: "execute `npm audit fix --force` para quebrar tudo de vez.", k: "dim" },
+    {
+      t: "execute `npm audit fix --force` para quebrar tudo de vez.",
+      k: "dim",
+    },
   ];
 }

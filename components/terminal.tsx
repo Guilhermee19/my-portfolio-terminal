@@ -6,8 +6,9 @@ import { profile, projects, stack, THEMES } from "@/lib/data";
 import { INSTALLERS, install, SHELL, type Line } from "@/lib/commands";
 import { fetchBoard, type Board } from "@/lib/scores";
 import Snake from "@/components/snake";
+import Matrix from "@/components/matrix";
 
-type Fx = null | "404" | "bug";
+type Fx = null | "404" | "bug" | "shutdown";
 
 const PROMPT = "gui@iamgui.dev:~$";
 const ROOT_PROMPT = "root@iamgui.dev:~#";
@@ -44,11 +45,12 @@ const FULL_LIST: Line[] = [
   { t: "" },
   { t: "SISTEMA", k: "hi" },
   { t: "  uname -a · neofetch · uptime · top · htop · ps aux", k: "dim" },
-  { t: "  df -h · free -h · kill · shutdown · mount", k: "dim" },
+  { t: "  df -h · free -h · kill · mount", k: "dim" },
+  { t: "  shutdown / poweroff / halt  →  desliga a tela de verdade", k: "dim" },
   { t: "" },
   { t: "REDE", k: "hi" },
   {
-    t: "  ip a · ifconfig · netstat · ss · traceroute · ping · ssh · curl · wget",
+    t: "  ip a · ifconfig · ipconfig · netstat · ss · traceroute · ping · ssh · curl · wget",
     k: "dim",
   },
   { t: "" },
@@ -75,7 +77,7 @@ const FULL_LIST: Line[] = [
   { t: "" },
   { t: "ARCADE", k: "hi" },
   {
-    t: "  snake · cobrinha · jogo · play   →  3 iniciais, placar online",
+    t: "  snake · cobrinha · jogo · play   →  código de 5, placar online",
     k: "dim",
   },
   { t: "  scores · placar · highscores     →  top 1Ø sem jogar", k: "dim" },
@@ -87,7 +89,7 @@ const FULL_LIST: Line[] = [
   },
   { t: "" },
   { t: "TELAS CHEIAS", k: "hi" },
-  { t: "  404 · bug", k: "dim" },
+  { t: "  404 · bug · matrix (escolha a pílula) · shutdown", k: "dim" },
   { t: "" },
   { t: "REFERÊNCIAS", k: "hi" },
   { t: "  marvel · jarvis", k: "dim" },
@@ -385,6 +387,7 @@ export default function Terminal() {
   const [askPass, setAskPass] = useState(false);
   const [root, setRoot] = useState(false);
   const [game, setGame] = useState<null | "snake">(null);
+  const [matrix, setMatrix] = useState(false);
   const gameRef = useRef<null | "snake">(null);
   gameRef.current = game; // o listener global de `~` lê isto sem re-registrar
   const hist = useRef<string[]>([]);
@@ -676,6 +679,33 @@ export default function Terminal() {
         setAskPass(true);
         return; // o próprio prompt vira `senha:`
 
+      case "shutdown":
+      case "poweroff":
+      case "halt":
+        stream(
+          [
+            { t: "Broadcast message from gui@unit-sr-a", k: "err" },
+            { t: "O sistema será desligado AGORA!", k: "err" },
+            { t: "parando portfolio.service ...... [  OK  ]", k: "dim" },
+            { t: "parando nginx.service .......... [  OK  ]", k: "dim" },
+            { t: "desmontando /home/gui .......... [  OK  ]", k: "dim" },
+          ],
+          260,
+        );
+        timers.current.push(
+          window.setTimeout(() => {
+            // o site colapsa como um tubo desligando; a tela final entra por cima
+            document.body.classList.add("crt-off");
+            timers.current.push(
+              window.setTimeout(() => {
+                document.body.classList.remove("crt-off");
+                setFx("shutdown");
+              }, 720),
+            );
+          }, 1500),
+        );
+        return;
+
       case "reset":
       case "reboot":
         stream(
@@ -849,11 +879,11 @@ export default function Terminal() {
         );
 
       case "matrix":
-        return stream([
+        push([
           { t: "acorda...", k: "dim" },
-          { t: "a mesa está te vigiando.", k: "dim" },
           { t: "siga o coelho de CSS.", k: "ok" },
         ]);
+        return setMatrix(true);
 
       case "coffee":
       case "cafe":
@@ -1089,7 +1119,28 @@ export default function Terminal() {
         />
       )}
 
-      <FxScreen fx={fx} />
+      {matrix && (
+        <Matrix
+          onExit={(choice) => {
+            setMatrix(false);
+            push(
+              choice === "vermelha"
+                ? [
+                    { t: "você escolheu a vermelha.", k: "err" },
+                    { t: "agora já sabe como o truque funciona.", k: "dim" },
+                  ]
+                : choice === "azul"
+                  ? [
+                      { t: "você escolheu a azul.", k: "ok" },
+                      { t: "a história acaba aqui. bom portfólio.", k: "dim" },
+                    ]
+                  : [{ t: "você não escolheu nenhuma. covarde.", k: "dim" }],
+            );
+          }}
+        />
+      )}
+
+      <FxScreen fx={fx} onDismiss={() => setFx(null)} />
     </>
   );
 }
@@ -1119,7 +1170,10 @@ export function Screen404({ hint }: { hint: string }) {
   );
 }
 
-function FxScreen({ fx }: { fx: Fx }) {
+function FxScreen({ fx, onDismiss }: { fx: Fx; onDismiss: () => void }) {
+  // o desligado é opaco de verdade e some só no botão — clique fora não religa
+  if (fx === "shutdown") return <PoweredOff onBack={onDismiss} />;
+
   return (
     <AnimatePresence>
       {fx && (
@@ -1158,5 +1212,45 @@ function FxScreen({ fx }: { fx: Fx }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Tela pós-desligamento. window.close() só funciona em aba aberta por script,
+    então o normal é o browser recusar — daí a mensagem do MS-DOS de sempre. */
+function PoweredOff({ onBack }: { onBack: () => void }) {
+  const [refused, setRefused] = useState(false);
+
+  useEffect(() => {
+    window.close();
+    const id = setTimeout(() => setRefused(true), 400);
+    return () => clearTimeout(id);
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sistema desligado"
+    >
+      <p className="text-sm tracking-[0.25em] text-[#ffb000] sm:text-lg">
+        É seguro desligar o seu computador.
+      </p>
+
+      {refused && (
+        <>
+          <p className="max-w-sm text-[11px] leading-6 text-[#ffb000]/50">
+            (o navegador não deixou fechar a aba — só dá pra fechar o que ele
+            mesmo abriu. feche no X, ou religue aí embaixo.)
+          </p>
+          <button
+            onClick={onBack}
+            className="border border-[#ffb000]/40 px-6 py-2 text-[11px] tracking-[0.25em] text-[#ffb000] transition-colors hover:bg-[#ffb000] hover:text-black"
+          >
+            » RELIGAR «
+          </button>
+        </>
+      )}
+    </div>
   );
 }
