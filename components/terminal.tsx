@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { profile, projects, stack, THEMES } from "@/lib/data";
+import { INSTALLERS, install, SHELL, type Line } from "@/lib/commands";
 
-type Line = { t: string; k?: "err" | "ok" | "dim" | "hi" };
 type Fx = null | "404" | "bug";
 
 const PROMPT = "gui@iamgui.dev:~$";
@@ -19,11 +19,36 @@ const FULL_LIST: Line[] = [
   { t: "ACESSO ROOT CONCEDIDO", k: "hi" },
   { t: "privilégios elevados · todos os comandos revelados", k: "ok" },
   { t: "" },
+  { t: "SESSÃO", k: "hi" },
+  { t: "  help · clear · exit · reset · reboot · history · history clear", k: "dim" },
+  { t: "  su · sudo su · logout · theme <verde|ambar|ciano|magenta|sangue|mono>", k: "dim" },
+  { t: "  projetos · contato · date · whoami · id · groups", k: "dim" },
+  { t: "" },
+  { t: "ARQUIVOS E NAVEGAÇÃO", k: "hi" },
+  { t: "  ls · cat <arq> · pwd · cd · find · which · grep · man · echo", k: "dim" },
+  { t: "  mkdir · touch · mv · cp · chown  (tudo somente leitura, claro)", k: "dim" },
+  { t: "" },
   { t: "SISTEMA", k: "hi" },
-  { t: "  help · clear · exit · history · history clear · logout", k: "dim" },
-  { t: "  ls · cat <arquivo> · whoami · date · ping", k: "dim" },
-  { t: "  theme <verde|ambar|ciano|magenta|sangue|mono>", k: "dim" },
-  { t: "  projetos · contato", k: "dim" },
+  { t: "  uname -a · neofetch · uptime · top · htop · ps aux", k: "dim" },
+  { t: "  df -h · free -h · kill · shutdown · mount", k: "dim" },
+  { t: "" },
+  { t: "REDE", k: "hi" },
+  { t: "  ip a · ifconfig · netstat · ss · traceroute · ping · ssh · curl · wget", k: "dim" },
+  { t: "" },
+  { t: "SERVIDOR", k: "hi" },
+  { t: "  systemctl · nginx -t · journalctl · crontab -l", k: "dim" },
+  { t: "  docker ps · kubectl get pods", k: "dim" },
+  { t: "" },
+  { t: "INSTALAÇÃO  (aceita pacote: `npm i three`)", k: "hi" },
+  { t: "  npm · pnpm · yarn · bun · pip · apt · apt-get · brew", k: "dim" },
+  { t: "  cargo · composer · gem · go   +  apt update · apt upgrade", k: "dim" },
+  { t: "" },
+  { t: "VERSÕES E EDITORES", k: "hi" },
+  { t: "  node -v · npm -v · python --version · git --version", k: "dim" },
+  { t: "  vim · nano · emacs · code .", k: "dim" },
+  { t: "" },
+  { t: "GIT", k: "hi" },
+  { t: "  git status · git log · git commit · git blame · git push --force", k: "dim" },
   { t: "" },
   { t: "CLÁSSICOS", k: "hi" },
   { t: "  hello world · konami · matrix · hack · coffee · sudo · rm · vim · python", k: "dim" },
@@ -43,7 +68,7 @@ const FULL_LIST: Line[] = [
   { t: "  deploy · env · chmod 777 · 500", k: "dim" },
   { t: "" },
   { t: "DEV EM GERAL", k: "hi" },
-  { t: "  git blame · git push --force · stackoverflow · so · tabs · spaces", k: "dim" },
+  { t: "  stackoverflow · so · tabs · spaces", k: "dim" },
   { t: "" },
   { t: "ARQUIVOS (use com `cat`)", k: "hi" },
   { t: "  sobre.txt · stack.cfg · projetos.json · contato.md · .segredo", k: "dim" },
@@ -97,6 +122,9 @@ const HELP: Line[] = [
   { t: "  help ............ esta lista" },
   { t: "  hello world ..... o primeiro programa de todo mundo" },
   { t: "  ls / cat <arq> .. sistema de arquivos" },
+  { t: "  reset ........... reinicia tudo, boot incluído" },
+  { t: "  (funciona a maior parte do que você digitaria num shell:" },
+  { t: "   pwd, uname -a, top, df -h, npm i <pkg>, systemctl, git status...)", k: "dim" },
   { t: "  whoami .......... quem está falando" },
   { t: "  history ......... ↑↓ percorrem, e fica salvo entre visitas" },
   { t: "  theme <cor> ..... repinta o sistema (theme list)" },
@@ -420,7 +448,16 @@ export default function Terminal() {
     if (c === "hello" || c === "helloworld" || c === "hello-world")
       return stream(HELLO, 190);
 
-    // piadas de dev: casa a frase inteira ("npm install") ou só o comando ("npm")
+    // gerenciadores de pacote: `npm i three`, `apt install nginx`, `pip install requests`...
+    const verbs = INSTALLERS[c];
+    if (verbs && verbs.includes(args[0]?.toLowerCase() ?? ""))
+      return stream(install(c, args[0].toLowerCase(), args[1] ?? ""), 320);
+
+    // saída de sistema: casa a frase inteira ("df -h") ou só o comando ("uptime")
+    const sys = SHELL[full] ?? SHELL[c];
+    if (sys) return stream(sys, sys.length > 6 ? 90 : 200);
+
+    // piadas de dev: mesma regra de lookup
     const quip = QUIPS[full] ?? QUIPS[c];
     if (quip) return stream(quip, 260);
 
@@ -459,6 +496,100 @@ export default function Terminal() {
       case "quit":
       case "sair":
         return setOpen(false);
+
+      // ── shell: navegação e arquivos (tudo somente leitura) ──
+      case "pwd":
+        return push([{ t: "/home/gui/portfolio", k: "ok" }]);
+
+      case "cd":
+        if (!arg || arg === "~" || arg === "/home/gui/portfolio")
+          return push([{ t: "já estamos aqui.", k: "dim" }]);
+        return push([{ t: `cd: ${arg}: acesso negado`, k: "err" }]);
+
+      case "echo":
+        return push([{ t: args.join(" ") || " " }]);
+
+      case "mkdir":
+      case "touch":
+      case "mv":
+      case "cp":
+      case "chown":
+        return push([
+          { t: `${c}: não foi possível criar '${arg || "?"}'`, k: "err" },
+          { t: "sistema de arquivos montado como somente leitura.", k: "dim" },
+        ]);
+
+      case "grep":
+        return push([
+          { t: `grep: nenhum resultado para '${arg || ""}'`, k: "dim" },
+          { t: "tente `ls` e depois `cat` num dos arquivos.", k: "dim" },
+        ]);
+
+      case "find":
+        return push([
+          { t: "./sobre.txt", k: "dim" },
+          { t: "./stack.cfg", k: "dim" },
+          { t: "./projetos.json", k: "dim" },
+          { t: "./contato.md", k: "dim" },
+          { t: "./.segredo", k: "ok" },
+        ]);
+
+      case "which":
+      case "whereis":
+        return push([{ t: `/usr/local/bin/${arg || "gui"}`, k: "ok" }]);
+
+      case "man":
+        return push([
+          { t: `Nenhuma entrada de manual para ${arg || "isso"}.`, k: "err" },
+          { t: "aqui o manual é `help`. e ele até que é curto.", k: "dim" },
+        ]);
+
+      // ── shell: rede ─────────────────────────────────────
+      case "ssh":
+        return stream([
+          { t: `ssh: conectando em ${arg || "servidor"}...`, k: "dim" },
+          { t: "Permission denied (publickey).", k: "err" },
+          { t: "sua chave não está no authorized_keys. como sempre.", k: "dim" },
+        ]);
+
+      case "curl":
+      case "wget":
+        return stream([
+          { t: `--> GET ${arg || "https://iamgui.dev"}`, k: "dim" },
+          { t: "HTTP/2 2ØØ · content-type: text/html · 14.2 kB", k: "ok" },
+          { t: "<!doctype html><html lang=\"pt-BR\">...", k: "dim" },
+        ]);
+
+      case "kill":
+        return push([
+          { t: `processo ${arg || "1337"} encerrado.`, k: "ok" },
+          { t: "o webpack sempre volta.", k: "dim" },
+        ]);
+
+      // ── shell: sessão ───────────────────────────────────
+      case "su":
+        if (root) return push([{ t: "você já é root.", k: "dim" }]);
+        setAskPass(true);
+        return; // o próprio prompt vira `senha:`
+
+      case "reset":
+      case "reboot":
+        stream(
+          [
+            { t: c === "reboot" ? "reiniciando o sistema..." : "resetando terminal...", k: "err" },
+            { t: "desmontando /home/gui .......... [  OK  ]", k: "dim" },
+            { t: "encerrando sessão .............. [  OK  ]", k: "dim" },
+          ],
+          260,
+        );
+        // recarrega a página de verdade — o boot roda de novo
+        timers.current.push(
+          window.setTimeout(() => {
+            sessionStorage.removeItem("booted");
+            location.reload();
+          }, 1300),
+        );
+        return;
 
       case "ls":
       case "dir":
@@ -622,6 +753,11 @@ export default function Terminal() {
         ]);
 
       case "sudo":
+        if (arg === "su" || arg === "-i" || arg === "-s") {
+          if (root) return push([{ t: "você já é root.", k: "dim" }]);
+          setAskPass(true);
+          return; // o próprio prompt vira `senha:`
+        }
         return push([
           {
             t: `gui não está no arquivo sudoers. Este incidente será reportado.`,

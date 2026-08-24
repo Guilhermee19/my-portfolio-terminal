@@ -12,11 +12,11 @@ const jet = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://iamgui.dev"),
-  title: `${profile.handle} // TERMINAL`,
+  title: `${profile.handle} // PORTFOLIO`,
   description:
     "Portfólio de Guilherme Santana — desenvolvedor front-end com 7+ anos em Angular, React, Next.js e Three.js. Rio de Janeiro, Brasil.",
   openGraph: {
-    title: "I_AM_GUI // TERMINAL",
+    title: "I_AM_GUI // PORTFOLIO",
     description:
       "Front-end engineer · 6+ anos · Angular, React, Next.js, Three.js",
     type: "website",

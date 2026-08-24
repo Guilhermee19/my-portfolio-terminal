@@ -42,9 +42,26 @@ script inline do `layout.tsx`, então não tem flash):
 - `theme <cor>` — repinta o **site inteiro**; só `--color-grn` muda, o resto da paleta
   deriva dela via `color-mix` no `globals.css`.
 - `hello world`, `marvel`, `jarvis`, `404`, `bug`, `hack`, `matrix`, `konami`
-- front: `!important`, `z-index`, `center`, `npm install`, `undefined`, `nan`, `console.log`, `hydration`
+- front: `!important`, `z-index`, `center`, `undefined`, `nan`, `console.log`, `hydration`
 - back: `sql`, `docker`, `k8s`, `cache`, `regex`, `deploy`, `env`, `chmod 777`, `vim`, `500`
 - e ainda `git blame`, `stackoverflow`, `tabs`, `python`, `coffee`, `sudo`, `rm`
+
+### Comandos de shell (`lib/commands.ts`)
+
+Pra parecer um terminal de verdade, não só um menu:
+
+- **sessão** — `reset` / `reboot` (recarregam a página e rodam o boot de novo), `su`, `sudo su`, `id`, `groups`
+- **arquivos** — `pwd`, `cd`, `find`, `which`, `grep`, `man`, `echo`, `mkdir`/`touch`/`mv`/`cp` (somente leitura)
+- **sistema** — `uname -a`, `neofetch`, `uptime`, `top`/`htop`, `ps aux`, `df -h`, `free -h`, `kill`, `shutdown`
+- **rede** — `ip a`/`ifconfig`, `netstat`/`ss`, `traceroute`, `ssh`, `curl`, `wget`
+- **servidor** — `systemctl`, `nginx -t`, `journalctl`, `crontab -l`, `docker ps`, `kubectl get pods`
+- **instalação** — `npm`/`pnpm`/`yarn`/`bun`/`pip`/`apt`/`brew`/`cargo`/`composer`/`gem`/`go` +
+  subcomando; aceita pacote (`npm i three` → resolve, barra de progresso, versão, "vulnerabilidades")
+- **versões/editores** — `node -v`, `npm -v`, `python --version`, `git --version`, `nano`, `emacs`, `code .`
+- **git** — `git status`, `git log`, `git commit`
+
+Saída fixa vai no mapa `SHELL`; o que precisa do argumento (instaladores, `echo`, `ssh`…)
+está no `switch` do `run()` em `terminal.tsx`.
 
 ## Detalhes
 
