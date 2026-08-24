@@ -10,18 +10,21 @@ npm start
 npm test        # regras do placar do arcade
 ```
 
-## ⚠ Pré-requisito do placar (uma vez, no VPS)
+## O placar no VPS
 
-O `snake` grava no json-server que roda em `minima-jsonsever`. O json-server clássico
-**não cria coleção nova via POST** — enquanto `points-snake` não existir no `db.json`,
-a API responde 5Ø3 e o jogo cai no placar local.
+O `snake` grava na coleção `point-snake` do json-server (`minima-jsonsever`, pm2, porta 3ØØ4).
+A coleção já existe. Se um dia sumir, o json-server clássico **não recria via POST** — tem que
+voltar no `db.json` e reiniciar, senão a API responde 5Ø3 e o jogo cai no placar local.
 
 ```bash
-cd /root/projects/minima-jsonsever
-cp db.json db.json.bak
-node -e 'const f="db.json",d=JSON.parse(require("fs").readFileSync(f));d["points-snake"]??=[];require("fs").writeFileSync(f,JSON.stringify(d,null,2))'
-pm2 restart minima-jsonserver
-curl -s http://127.0.0.1:3004/points-snake   # tem que responder []
+# smoke test do CRUD, sem passar pelo app
+B=http://62.171.172.35:3004/point-snake
+curl -s $B                                                    # lista
+curl -s -X POST $B -H 'content-type: application/json' \
+  -d '{"id":"TST","name":"TST","score":10,"at":"2026-01-01","games":1}'
+curl -s -X PUT $B/TST -H 'content-type: application/json' \
+  -d '{"id":"TST","name":"TST","score":99,"at":"2026-01-02","games":2}'
+curl -s -X DELETE $B/TST
 ```
 
 ## Estrutura
@@ -95,7 +98,7 @@ mostra o top 1Ø sem jogar.
 - O código é o **id** no json-server: jogar de novo com o mesmo código só troca o recorde
   se superar. Empate no placar desempata por quem chegou primeiro.
 
-Fluxo de gravação: browser → `/api/scores` → `{JSON_SERVER_URL}/points-snake`.
+Fluxo de gravação: browser → `/api/scores` → `{JSON_SERVER_URL}/point-snake`.
 A ponte existe porque o json-server é `http://` e o site é `https://` — chamada direta
 seria bloqueada por mixed content. Ela também valida o código (`^[A-Z0-9]{1,5}$`) e o
 teto de score antes de gravar.

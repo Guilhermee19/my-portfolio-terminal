@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 /** O json-server é http://; este handler é a ponte, senão o browser bloquearia (mixed content). */
 const BASE = process.env.JSON_SERVER_URL ?? "http://62.171.172.35:3004";
-const RESOURCE = "/points-snake"; // a coleção no db.json do VPS
+const RESOURCE = "/point-snake"; // a coleção no db.json do VPS
 const MAX_SCORE = 28 * 20 * 10; // teto do tabuleiro: nem a partida perfeita passa disso
 
 const req = (path: string, init?: RequestInit) =>
