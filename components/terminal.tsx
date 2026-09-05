@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { profile, projects, stack, THEMES } from "@/lib/data";
+import {
+  certificates,
+  profile,
+  projects,
+  stack,
+  THEMES,
+} from "@/lib/data";
 import { INSTALLERS, install, SHELL, type Line } from "@/lib/commands";
 import { fetchBoard, type Board, type Game } from "@/lib/scores";
 import Snake from "@/components/snake";
@@ -141,7 +147,7 @@ const FULL_LIST: Line[] = [
   { t: "" },
   { t: "ARQUIVOS (use com `cat`)", k: "hi" },
   {
-    t: "  sobre.txt · stack.cfg · projetos.json · contato.md · .segredo",
+    t: "  sobre.txt · stack.cfg · projetos.json · certificados.md · contato.md · .segredo",
     k: "dim",
   },
 ];
@@ -151,9 +157,10 @@ const FILES: Record<string, Line[]> = {
     { t: profile.name + " · " + profile.role },
     { t: "Rio de Janeiro / BR · desde 2020 · " + profile.email },
   ],
-  "stack.cfg": stack.map((s) => ({
-    t: `${s.name.padEnd(18, ".")} ${s.level}%`,
-  })),
+  "stack.cfg": stack.flatMap((g) => [
+    { t: `[${g.label.toLowerCase().replace(/ /g, "-")}]`, k: "dim" as const },
+    ...g.items.map((t) => ({ t: `  ${t}` })),
+  ]),
   "projetos.json": [
     {
       t: `{ "total": ${projects.length}, "online": ${projects.filter((p) => p.href).length},`,
@@ -162,6 +169,13 @@ const FILES: Record<string, Line[]> = {
       t: `  "em_curso": ${projects.filter((p) => p.status === "EM CURSO").length} }`,
     },
     { t: "dica: role até [ Ø4 ] PROJETOS ou digite `projetos`", k: "dim" },
+  ],
+  "certificados.md": [
+    { t: "# certificados" },
+    ...certificates.map((c) => ({
+      t: `- ${c.title} · ${c.issuer} · ${c.year}`,
+    })),
+    { t: "dica: role até [ Ø5 ] CERTIFICADOS ou digite `certificados`", k: "dim" as const },
   ],
   "contato.md": [
     { t: "# canal aberto" },
@@ -217,6 +231,7 @@ const HELP: Line[] = [
   { t: "  history ......... ↑↓ percorrem, e fica salvo entre visitas" },
   { t: "  theme <cor> ..... repinta o sistema (theme list)" },
   { t: "  projetos ........ índice de projetos" },
+  { t: "  certificados .... diploma, cursos e palestras" },
   { t: "  contato ......... abrir canal" },
   { t: "  clear / exit .... limpar / fechar" },
   {
@@ -716,6 +731,7 @@ export default function Terminal() {
           { t: "./sobre.txt", k: "dim" },
           { t: "./stack.cfg", k: "dim" },
           { t: "./projetos.json", k: "dim" },
+          { t: "./certificados.md", k: "dim" },
           { t: "./contato.md", k: "dim" },
           { t: "./.segredo", k: "ok" },
         ]);
@@ -880,6 +896,16 @@ export default function Terminal() {
           projects.map((p) => ({
             t: `${p.idx}  ${p.name.padEnd(24, " ")} ${p.status}`,
           })),
+        );
+
+      case "certificados":
+      case "certs":
+        return push(
+          certificates.length
+            ? certificates.map((c) => ({
+                t: `${c.idx}  ${c.kind.padEnd(10, " ")} ${c.title} · ${c.issuer} · ${c.year}`,
+              }))
+            : [{ t: "nenhum certificado arquivado ainda.", k: "dim" as const }],
         );
 
       case "contato":

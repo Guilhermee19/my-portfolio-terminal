@@ -8,14 +8,19 @@ import {
 } from "@/components/hud";
 import { Reveal, Scramble } from "@/components/reveal";
 import AccessCards from "@/components/access-cards";
+import ProjectGrid from "@/components/project-grid";
+import Certificates from "@/components/certificates";
 import {
   profile,
   stats,
   stack,
+  stackNames,
   services,
   projects,
+  certificates,
   timeline,
 } from "@/lib/data";
+import { publicRepos } from "@/lib/github";
 
 const BIN = [
   "Ø1ØØ1ØØ11",
@@ -38,7 +43,14 @@ function Head({ n, title, sub }: { n: string; title: string; sub: string }) {
   );
 }
 
-export default function Page() {
+export default async function Page() {
+  /* o card de REPOS mostra o número vivo do GitHub; se a API não responder,
+     fica o valor congelado do data.ts e ninguém percebe */
+  const repos = await publicRepos();
+  const cards = stats.map((s) =>
+    s.id === "repos" && repos !== null ? { ...s, value: String(repos) } : s,
+  );
+
   return (
     <>
       <BootScreen />
@@ -149,7 +161,7 @@ export default function Page() {
             {[0, 1].map((k) => (
               <div key={k} className="flex gap-8" aria-hidden={k === 1}>
                 {[
-                  ...stack.map((s) => s.name),
+                  ...stackNames,
                   "WEBGL",
                   "SSR",
                   "A11Y",
@@ -187,8 +199,12 @@ export default function Page() {
               </p>
 
               <div className="grid grid-cols-2 gap-3">
-                {stats.map((s) => (
-                  <div key={s.label} className="brk panel px-4 py-4">
+                {cards.map((s) => (
+                  <div
+                    key={s.id}
+                    title={s.hint}
+                    className="brk panel px-4 py-4"
+                  >
                     <div className="text-3xl font-extrabold text-grn glow">
                       {s.value}
                     </div>
@@ -231,32 +247,30 @@ export default function Page() {
             <Head n="Ø2" title="STACK" sub="módulos carregados" />
           </Reveal>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            {stack.map((s, i) => (
-              <Reveal key={s.name} delay={i * 0.04}>
-                <div className="panel px-4 py-3">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-bold tracking-[0.15em] text-grn-2">
-                      {s.name}
+          <div className="grid gap-3 md:grid-cols-3">
+            {stack.map((g, i) => (
+              <Reveal key={g.id} delay={i * 0.06}>
+                <div className="brk panel h-full px-5 py-5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs font-bold tracking-[0.15em] text-grn">
+                      {g.label}
                     </span>
-                    <span className="lbl">{s.tag}</span>
+                    <span className="lbl">{g.id}</span>
                   </div>
-                  <div className="mt-2.5 flex items-center gap-3">
-                    <div className="h-2 flex-1 border border-grn/30 p-[1px]">
-                      {/* barra em blocos, estilo dot-matrix */}
-                      <div
-                        className="h-full bg-grn/75"
-                        style={{
-                          width: `${s.level}%`,
-                          backgroundImage:
-                            "repeating-linear-gradient(90deg,var(--color-grn) 0 5px,transparent 5px 7px)",
-                        }}
-                      />
-                    </div>
-                    <span className="w-9 text-right text-[11px] tabular-nums text-grn">
-                      {s.level}%
-                    </span>
-                  </div>
+                  <p className="mt-1.5 text-[11px] leading-5 text-grn-2/50">
+                    {g.note}
+                  </p>
+                  <ul className="mt-4 space-y-1.5">
+                    {g.items.map((t) => (
+                      <li
+                        key={t}
+                        className="flex items-center gap-2 border-t border-grn/10 pt-1.5 text-[12px] text-grn-2/80"
+                      >
+                        <span className="text-grn/40">▸</span>
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </Reveal>
             ))}
@@ -301,69 +315,26 @@ export default function Page() {
             />
           </Reveal>
 
-          <div className="grid gap-3 lg:grid-cols-2">
-            {projects.map((p, i) => {
-              return (
-                <Reveal key={p.idx} delay={i * 0.04}>
-                  {/* sem href = card estático; <a> sem href não entra na ordem de tab */}
-                  <a
-                    href={p.href}
-                    target={p.href ? "_blank" : undefined}
-                    rel="noreferrer"
-                    className="brk panel group flex h-full flex-col px-5 py-5 transition-colors hover:border-grn/60 hover:bg-grn/[0.07]"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-extrabold text-grn/35">
-                        {p.idx}
-                      </span>
-                      <span className="h-px flex-1 bg-grn/15" />
-                      <span
-                        className={`border px-2 py-0.5 text-[9px] tracking-[0.15em] ${
-                          p.status === "ONLINE"
-                            ? "border-grn/60 text-grn"
-                            : p.status === "EM CURSO"
-                              ? "border-alert/60 text-alert"
-                              : "border-dim/50 text-dim"
-                        }`}
-                      >
-                        {p.status}
-                      </span>
-                      <span className="lbl">{p.year}</span>
-                    </div>
-
-                    <h3 className="mt-3 text-base font-extrabold tracking-[0.08em] text-grn-2 transition-colors group-hover:text-grn group-hover:glow sm:text-lg">
-                      {p.name}
-                    </h3>
-                    <p className="mt-2 flex-1 text-[12px] leading-6 text-grn-2/60">
-                      {p.desc}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                      {p.tech.map((t) => (
-                        <span
-                          key={t}
-                          className="border border-grn/25 px-2 py-0.5 text-[9px] text-grn/70"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                      {p.href && (
-                        <span className="ml-auto text-[10px] tracking-[0.2em] text-dim group-hover:text-grn">
-                          EXECUTAR ↗
-                        </span>
-                      )}
-                    </div>
-                  </a>
-                </Reveal>
-              );
-            })}
-          </div>
+          <ProjectGrid />
         </section>
 
-        {/* ══ Ø5 CONTATO ══ */}
+        {/* ══ Ø5 CERTIFICADOS ══ */}
+        <section id="certificados" className="scroll-mt-20 pt-20">
+          <Reveal>
+            <Head
+              n="Ø5"
+              title="CERTIFICADOS"
+              sub={`${certificates.length} ${certificates.length === 1 ? "documento arquivado" : "documentos arquivados"}`}
+            />
+          </Reveal>
+
+          <Certificates />
+        </section>
+
+        {/* ══ Ø6 CONTATO ══ */}
         <section id="contato" className="scroll-mt-20 pt-20">
           <Reveal>
-            <Head n="Ø5" title="CONTATO" sub="canal aberto" />
+            <Head n="Ø6" title="CONTATO" sub="canal aberto" />
           </Reveal>
 
           <Reveal>

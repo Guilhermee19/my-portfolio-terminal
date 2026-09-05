@@ -8,7 +8,8 @@ export const NAV = [
   { id: "stack", n: "Ø2" },
   { id: "servicos", n: "Ø3" },
   { id: "projetos", n: "Ø4" },
-  { id: "contato", n: "Ø5" },
+  { id: "certificados", n: "Ø5" },
+  { id: "contato", n: "Ø6" },
 ];
 
 export const openTerminal = () =>

@@ -39,14 +39,19 @@ curl -s -X DELETE $B/TST
 | Arquivo | O quê |
 |---|---|
 | `lib/data.ts` | **todo o conteúdo** — perfil, projetos, stack, timeline, serviços e as linhas do boot |
-| `app/page.tsx` | página (server component) — as 5 seções |
+| `app/page.tsx` | página (server component) — as 6 seções |
 | `app/globals.css` | tema, grade de fundo, scanlines e as utilities `brk` / `panel` / `glow` / `striped` / `lbl` |
 | `components/boot-screen.tsx` | sequência de boot (uma vez por sessão, `sessionStorage`) |
 | `components/hud.tsx` | barra superior, barra inferior e trilhos laterais |
 | `components/reveal.tsx` | entrada no scroll + texto que decodifica |
 | `components/terminal.tsx` | o easter egg: console, comandos, piadas e as telas de 404 / bug |
 | `components/access-cards.tsx` | os 3 contadores de acesso no hero |
+| `components/modal.tsx` | o popup reusado por projetos e certificados (ESC, backdrop, foco, trava o scroll) |
+| `components/crt-image.tsx` | imagem com o tratamento de tubo — e o placeholder `NO SIGNAL` quando não tem arquivo |
+| `components/project-grid.tsx` | os cards de projeto + o popup de detalhe |
+| `components/certificates.tsx` | os cards de certificado + o popup, com o toggle `VER ORIGINAL` |
 | `lib/visits.ts` | regras do contador (agregação, poda) + id anônimo e cliente |
+| `lib/github.ts` | a contagem de repos públicos, lida da API do GitHub na renderização |
 | `app/api/visits/route.ts` | ponte pro json-server: valida o id, faz o upsert, devolve as métricas |
 | `components/arcade.tsx` | o que os dois jogos compartilham: marquee, atração, game over, código, placar |
 | `components/snake.tsx` | a cobrinha |
@@ -57,6 +62,29 @@ curl -s -X DELETE $B/TST
 | `app/not-found.tsx` | 404 de verdade, reaproveitando a tela do comando `404` |
 
 Para editar o portfólio, mexa em `lib/data.ts` — o resto é chrome.
+
+## Certificados e screenshots
+
+As únicas imagens do projeto. Solte o arquivo em `public/certs/` (ou
+`public/projects/`) e aponte pra ele em `lib/data.ts`:
+
+```ts
+// certificates[]              // projects[].shots[]
+image: "/certs/arquivo.webp"   { src: "/projects/arquivo.webp", alt: "..." }
+```
+
+Sem `image`/`shots` o card mostra o placeholder `NO SIGNAL` e nada quebra — dá pra
+cadastrar o certificado antes de ter o arquivo.
+
+**O filtro de tubo** (`@utility crt-shot` no `globals.css`) existe porque diploma é
+papel branco com brasão colorido, e isso briga com o fósforo verde. A imagem é
+dessaturada, tingida com `var(--color-grn)` via `mix-blend-mode: color` e coberta pela
+mesma `.crt-scan` do resto do site — então o comando `theme` **repinta os certificados
+junto**. Passar o mouse em cima de qualquer imagem desliga o tubo e mostra o arquivo
+cru — no card e no popup. E o popup ainda tem o `VER ORIGINAL`, que fixa o original
+(inclusive no celular, onde não existe hover): diploma também é pra ser lido.
+
+Formato: `.webp`, lado maior em torno de 16ØØpx. O `next/image` cuida do resto.
 Para editar/adicionar comandos, é o mapa `QUIPS` (piadas) ou o `switch` do `run()` em `terminal.tsx`.
 
 ## Contador de acessos
@@ -80,6 +108,22 @@ Limitações: endpoint público sem auth (dá pra forjar POST), a contagem é po
 storage vira um "único" novo) e quem bloqueia JS não é contado — bots que não executam script
 também não, o que aqui é a favor.
 
+## Repos públicos
+
+O card `REPOS PÚBLICOS` do bloco SOBRE não é um número digitado — vem de
+`api.github.com/users/<profile.githubUser>`.
+
+A chamada acontece **no servidor**, na renderização da página, com
+`next: { revalidate: 36ØØ }`. Isso importa: a API sem token dá 6Ø requisições por
+hora **por IP**. No servidor é uma chamada por hora no total, e a página continua
+estática (vira ISR, revalidada de hora em hora). No cliente seria uma chamada por
+visitante, com o IP de quem visita pagando a conta — e o número chegaria depois da
+primeira pintura.
+
+Se a API cair, mudar de formato ou estourar o limite, `publicRepos()` devolve `null`
+e o card fica com o valor congelado em `lib/data.ts`. Sem `----`, sem buraco: esse
+número muda de mês em mês, então um valor um pouco velho é melhor que um vazio.
+
 ## O terminal
 
 Abre pelo botão `>_` da topbar, pelo `>_ ABRIR TERMINAL` do hero ou pela tecla `~`.
@@ -93,7 +137,7 @@ script inline do `layout.tsx`, então não tem flash):
   comandos escondidos. Fica salvo em `gui:root`; `logout` sai. Depois disso o `help`
   já mostra a lista completa e o prompt vira `root@iamgui.dev:~#`.
   A senha está no bundle, como todo código de front — é easter egg, não segurança.
-- `help`, `ls`, `cat <arquivo>` (tem um `.segredo`), `whoami`, `history`, `projetos`, `contato`
+- `help`, `ls`, `cat <arquivo>` (tem um `.segredo`), `whoami`, `history`, `projetos`, `certificados`, `contato`
 - `theme <cor>` — repinta o **site inteiro**; só `--color-grn` muda, o resto da paleta
   deriva dela via `color-mix` no `globals.css`.
 - `hello world`, `marvel`, `jarvis`, `404`, `bug`, `hack`, `matrix`, `konami`
@@ -189,7 +233,9 @@ A validação barra lixo, não fraude. Autenticar um easter egg não se paga.
 
 ## Detalhes
 
-- Sem imagem nenhuma: grade, scanline, brilho e o título listrado são CSS puro.
+- O chrome é CSS puro: grade, scanline, brilho e o título listrado, zero asset.
+  As únicas imagens do site são os certificados e os screenshots de projeto — e mesmo
+  elas passam pelo filtro de tubo (ver abaixo).
 - O boot roda uma vez por sessão; um script inline no `layout.tsx` evita o flash em quem já bootou.
 - `prefers-reduced-motion` desliga as animações (inclusive o scramble).
 - Deploy: qualquer host de Next (Vercel `next build` padrão).

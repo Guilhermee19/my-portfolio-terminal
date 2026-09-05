@@ -165,6 +165,33 @@ body {
   font-size: 10px; letter-spacing: 0.22em; color: var(--color-dim);
 }
 
+/* Imagem tratada como sinal de CRT: dessatura, tinge com a cor do sistema
+   (então o comando `theme` repinta certificado e screenshot junto com o site)
+   e a .crt-scan por cima fecha o efeito. `isolation` prende o blend aqui
+   dentro — sem ela o mix-blend-mode enxergaria o fundo da página. */
+@utility crt-shot {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #000;
+  & img {
+    filter: grayscale(1) contrast(1.25) brightness(0.95);
+    mix-blend-mode: screen;
+    transition: filter 0.35s ease;
+  }
+  &::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: var(--color-grn); mix-blend-mode: color; opacity: 0.85;
+    transition: opacity 0.35s ease;
+  }
+  /* o mouse em cima desliga o tubo e mostra o arquivo cru — dá pra ler o
+     documento sem abrir o popup. [data-crt] são a scanline e o brilho. */
+  & [data-crt] { transition: opacity 0.35s ease; }
+  &:hover img { filter: none; }
+  &:hover::after { opacity: 0; }
+  &:hover [data-crt] { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
