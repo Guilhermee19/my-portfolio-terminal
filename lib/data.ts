@@ -277,6 +277,18 @@ export const certificates: Certificate[] = [
     desc: "Quatro anos e meio no Centro Universitário Serra dos Órgãos, em Teresópolis. Coeficiente de rendimento 7,72, com TCC em realidade aumentada feito em Three.js.",
     image: "/certs/guilherme_santana_rocha_graduacao_em_ciencia_da_computacao.png",
   },
+  {
+    idx: "Ø2",
+    title: "CRIE APIS REST COM PYTHON E DJANGO REST FRAMEWORK: ESSENCIAL",
+    issuer: "UDEMY · GEEK UNIVERSITY",
+    year: "2026",
+    kind: "CURSO",
+    hours: "9,5h",
+    desc: "Nove horas e meia de back-end atravessadas em duas semanas: models, serializers, viewsets, autenticação por token e paginação. Front-end que entende o que acontece do outro lado do endpoint discute bem menos com quem faz a API.",
+    href: "https://ude.my/UC-ecd26a07-a307-4842-b97c-267f6ffa6554",
+    image:
+      "/certs/crie_apis_rest_com_python_e_django_rest_framework_essencial.png",
+  },
   // Pra adicionar: solte o arquivo em public/certs/ e copie o bloco acima.
   // {
   //   idx: "Ø2",
